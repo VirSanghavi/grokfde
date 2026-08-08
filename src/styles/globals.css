@@ -113,29 +113,37 @@
     font-weight: 400;
   }
 
-  /* Slow cinematic sway — ease-in-out, no stepped Ken Burns */
-  @keyframes marketing-sway {
-    0% {
-      transform: scale(1.04) translate3d(-0.6%, -0.35%, 0);
+  /*
+   * Cinematic pan: pure horizontal L→R (then reverse via alternate).
+   * Constant scale — never pulse zoom. No Y drift. Motion lives in the
+   * encoded MP4; this class is only a poster fallback / reduced-motion static.
+   */
+  @keyframes marketing-pan-x {
+    from {
+      transform: scale(1.08) translate3d(3.2%, 0, 0);
     }
-    50% {
-      transform: scale(1.08) translate3d(0.7%, 0.4%, 0);
-    }
-    100% {
-      transform: scale(1.04) translate3d(-0.6%, -0.35%, 0);
+    to {
+      transform: scale(1.08) translate3d(-3.2%, 0, 0);
     }
   }
 
-  .marketing-sway {
+  .marketing-pan {
     will-change: transform;
     transform-origin: center center;
-    animation: marketing-sway 28s ease-in-out infinite;
+    /* Only used when video is unavailable; baked pan is preferred */
+    animation: none;
+    transform: scale(1.04);
+  }
+
+  .marketing-pan--css {
+    animation: marketing-pan-x 48s ease-in-out infinite alternate;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .marketing-sway {
-      animation: none;
-      transform: scale(1.05);
+    .marketing-pan,
+    .marketing-pan--css {
+      animation: none !important;
+      transform: scale(1.04);
     }
   }
 

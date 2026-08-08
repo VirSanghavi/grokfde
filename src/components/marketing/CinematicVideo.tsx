@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   src: string;
@@ -9,12 +9,14 @@ type Props = {
   className?: string;
   overlayClassName?: string;
   gradient?: "hero" | "footer" | "none";
+  /** When true, apply CSS L→R pan (use only if the MP4 has no camera motion). */
+  cssPan?: boolean;
 };
 
 /**
  * Full-bleed cinematic background.
- * Prefer smooth MP4; CSS sway fallback keeps motion silky if video fails.
- * Motion is a slow ease sway — never a stepped Ken Burns jump.
+ * Prefer MP4 with a baked slow left→right pan (constant zoom, no Y drift).
+ * CSS pan is off by default so we never stack two motions (that reads as shake).
  */
 export function CinematicVideo({
   src,
@@ -22,8 +24,10 @@ export function CinematicVideo({
   className,
   overlayClassName,
   gradient = "hero",
+  cssPan = false,
 }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const video = ref.current;
@@ -35,7 +39,7 @@ export function CinematicVideo({
         video.removeAttribute("autoplay");
       } else {
         video.muted = true;
-        void video.play().catch(() => {});
+        void video.play().catch(() => setVideoFailed(true));
       }
     };
     apply();
@@ -43,10 +47,16 @@ export function CinematicVideo({
     return () => mq.removeEventListener("change", apply);
   }, []);
 
+  const useCssPan = cssPan || videoFailed;
+
   return (
     <div className={cn("absolute inset-0 overflow-hidden bg-[#0a0e14]", className)}>
-      {/* CSS sway layer — always on poster for continuity; video sits on top when playing */}
-      <div className="marketing-sway absolute inset-[-6%]">
+      <div
+        className={cn(
+          "marketing-pan absolute inset-[-4%]",
+          useCssPan && "marketing-pan--css",
+        )}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={poster}
@@ -54,26 +64,28 @@ export function CinematicVideo({
           className="absolute inset-0 h-full w-full object-cover"
           draggable={false}
         />
-        <video
-          ref={ref}
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster={poster}
-          aria-hidden
-        >
-          <source src={src} type="video/mp4" />
-        </video>
+        {!videoFailed && (
+          <video
+            ref={ref}
+            className="absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster={poster}
+            aria-hidden
+            onError={() => setVideoFailed(true)}
+          >
+            <source src={src} type="video/mp4" />
+          </video>
+        )}
       </div>
 
       {gradient === "hero" && (
         <div
           className={cn(
             "pointer-events-none absolute inset-0",
-            // Soft vignette like Leaki: light top, deeper bottom-left for type
             "bg-[linear-gradient(180deg,rgba(10,14,20,0.12)_0%,rgba(10,14,20,0.05)_28%,rgba(10,14,20,0.35)_58%,rgba(10,14,20,0.72)_100%)]",
             overlayClassName,
           )}

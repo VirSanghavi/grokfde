@@ -211,11 +211,11 @@ export function ProspectChat({
             )}
             <Button
               size="sm"
-              className="glow-accent"
+              className="bg-fg text-accent-fg hover:bg-fg/90"
               leftIcon={<IconPhone className="h-3.5 w-3.5" />}
               onClick={() => setCallOpen(true)}
             >
-              Call {company.agentName}
+              FaceTime {company.agentName}
             </Button>
             <IconButton
               label="Memory"
@@ -235,8 +235,8 @@ export function ProspectChat({
           <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 scrollbar-thin sm:px-6">
             <div className="mx-auto max-w-2xl rounded-[var(--radius-lg)] border border-border bg-bg-elevated px-4 py-3 shadow-sm">
               <p className="text-sm leading-relaxed text-fg-muted">
-                You&apos;re on a dedicated line to a technical engineer. Mention your stack.
-                Context carries into calls.
+                You&apos;re talking to a technical engineer. Mention your stack. Hit FaceTime
+                anytime — full chat memory and company tools come with you.
               </p>
             </div>
 

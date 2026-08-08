@@ -32,35 +32,34 @@ const COLS = [
 export function MarketingFooter() {
   return (
     <footer className="relative bg-black text-white">
-      <section className="relative isolate min-h-[min(78vh,700px)] overflow-hidden">
+      <section className="relative isolate min-h-[min(52vh,480px)] overflow-hidden">
         <CinematicVideo
           src="/marketing/footer.mp4"
           poster="/marketing/footer-still.jpg"
           gradient="footer"
         />
-        <div className="relative z-10 mx-auto flex min-h-[min(78vh,700px)] max-w-[1120px] flex-col justify-center px-6 py-24 sm:px-10">
-          <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/40">
+        <div className="relative z-10 mx-auto flex min-h-[min(52vh,480px)] max-w-[1120px] flex-col justify-center px-5 py-14 sm:px-10 sm:py-16">
+          <p className="text-[12px] font-medium tracking-[-0.01em] text-white/40">
             Get started
           </p>
-          <h2 className="marketing-display mt-4 max-w-2xl text-[clamp(2.1rem,5vw,3.5rem)] font-medium leading-[1.05] tracking-[-0.035em] text-white">
-            See what your last deal was missing.
+          <h2 className="marketing-display mt-2 max-w-xl text-[clamp(1.75rem,4vw,2.6rem)] font-medium leading-[1.08] tracking-[-0.035em] text-white">
+            Deploy an engineer every prospect can FaceTime.
           </h2>
-          <p className="marketing-body mt-5 max-w-md text-[16px] leading-[1.55] text-white/62">
-            Deploy one FDE on your docs and tools. In minutes you will know whether every
-            prospect can reach a real technical engineer without waiting on your calendar.
+          <p className="marketing-body mt-3 max-w-md text-[15px] leading-[1.5] text-white/62">
+            Train once on your docs and tools. Chat and video share full context.
           </p>
-          <div className="mt-9 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link
               href="/onboarding"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-7 text-[14.5px] font-semibold tracking-[-0.01em] text-[#111827] transition-transform duration-150 hover:bg-[#fafafa] active:scale-[0.985]"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-[14px] font-semibold tracking-[-0.01em] text-[#111827] transition-transform duration-150 hover:bg-[#fafafa] active:scale-[0.985]"
             >
               Deploy your FDE
             </Link>
             <Link
               href="/fde/grok-fde"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-white/30 bg-transparent px-7 text-[14.5px] font-medium text-white/90 transition-colors duration-150 hover:border-white/45 hover:bg-white/[0.06]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 bg-transparent px-6 text-[14px] font-medium text-white/90 transition-colors duration-150 hover:border-white/45 hover:bg-white/[0.06]"
             >
-              Talk to Atlas
+              Try live demo
             </Link>
           </div>
         </div>

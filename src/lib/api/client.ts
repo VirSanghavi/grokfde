@@ -366,60 +366,74 @@ export const api = {
   },
 
   async startCall(conversationId: string) {
-    if (isMockMode()) return mock.mockStartCall(conversationId);
+    if (isMockMode()) {
+      const mockSession = await mock.mockStartCall(conversationId);
+      return {
+        ...mockSession,
+        realtimeToken: `mock_voice_${Date.now()}`,
+        realtimeUrl: "wss://api.x.ai/v1/realtime",
+        websocketProtocols: [] as string[],
+        mock: true,
+        voiceSession: {
+          voice: "eve",
+          instructions: "You are a demo FDE. Be concise and technical.",
+          turn_detection: { type: "server_vad" },
+          tools: [] as Array<Record<string, unknown>>,
+        },
+        context: { agentName: mockSession.media?.displayName || "Atlas" },
+      };
+    }
+
     const data = await realFetch<{
       token: string;
-      realtimeUrl?: string;
-      session?: { instructions?: string; voice?: string };
-      context?: { agentName?: string };
+      expiresAt?: number;
       mock?: boolean;
+      model?: string;
+      realtimeUrl?: string;
+      websocketProtocols?: string[];
+      session?: {
+        voice?: string;
+        instructions?: string;
+        turn_detection?: { type: string };
+        tools?: Array<Record<string, unknown>>;
+      };
+      context?: {
+        agentName?: string;
+        companyName?: string;
+        prospect?: Record<string, unknown>;
+      };
     }>("/api/voice/token", {
       method: "POST",
       body: JSON.stringify({ conversationId }),
     });
 
-    const session: CallSession & {
-      realtimeToken?: string;
-      realtimeUrl?: string;
-      instructions?: string;
-    } = {
+    return {
       id: `call_${Date.now()}`,
       conversationId,
-      status: "connected",
+      status: "connecting" as const,
       startedAt: new Date().toISOString(),
-      transcript: [],
+      transcript: [] as CallTranscriptLine[],
       liveActivity: [
-        { type: "searching_knowledge", label: "Loading company knowledge" },
+        { type: "searching_knowledge" as const, label: "Loading company knowledge + tools" },
       ],
       media: {
         faceImageUrl: "/agents/atlas-face.jpg",
         displayName: data.context?.agentName || "Atlas",
       },
       realtimeToken: data.token,
-      realtimeUrl: data.realtimeUrl,
-      instructions: data.session?.instructions,
-    };
-    return session;
-  },
-
-  connectCall(callId: string) {
-    if (isMockMode()) return mock.mockConnectCall(callId);
-    return Promise.resolve({
-      id: callId,
-      conversationId: "",
-      status: "connected" as const,
-      startedAt: new Date().toISOString(),
-      transcript: [],
-      liveActivity: [],
-      media: {
-        faceImageUrl: "/agents/atlas-face.jpg",
-        displayName: "Atlas",
+      realtimeUrl:
+        data.realtimeUrl ||
+        `wss://api.x.ai/v1/realtime?model=${encodeURIComponent(data.model || "grok-voice-latest")}`,
+      websocketProtocols: data.websocketProtocols ?? [`xai-client-secret.${data.token}`],
+      mock: Boolean(data.mock),
+      voiceSession: {
+        voice: data.session?.voice || "eve",
+        instructions: data.session?.instructions || "",
+        turn_detection: data.session?.turn_detection || { type: "server_vad" },
+        tools: data.session?.tools || [],
       },
-    });
-  },
-
-  getCallScript(conversationId: string) {
-    return mock.mockGetCallScript(conversationId);
+      context: data.context,
+    };
   },
 
   async completeCall(input: {
@@ -429,11 +443,21 @@ export const api = {
     durationSeconds: number;
   }) {
     if (isMockMode()) return mock.mockCompleteCall(input);
-    const transcriptText = input.transcript
-      .map((l) => `${l.speaker === "prospect" ? "Prospect" : "Atlas"}: ${l.text}`)
-      .join("\n");
+    const transcriptText =
+      input.transcript.length > 0
+        ? input.transcript
+            .map((l) => `${l.speaker === "prospect" ? "Prospect" : "FDE"}: ${l.text}`)
+            .join("\n")
+        : "Call completed with no captured transcript.";
     const data = await realFetch<{
-      call: Record<string, unknown>;
+      call: Record<string, unknown> & {
+        summary?: {
+          summary?: string;
+          technicalRequirements?: string[];
+          nextSteps?: string[];
+          commitments?: string[];
+        };
+      };
       prospect: Record<string, unknown>;
     }>("/api/calls/complete", {
       method: "POST",
@@ -444,6 +468,17 @@ export const api = {
         endedAt: new Date().toISOString(),
       }),
     });
+    const summary = (data.call.summary ?? {}) as {
+      summary?: string;
+      technicalRequirements?: string[];
+      nextSteps?: string[];
+      commitments?: string[];
+    };
+    const learned = [
+      ...(summary.technicalRequirements ?? []),
+      ...(summary.commitments ?? []),
+      ...(summary.nextSteps ?? []),
+    ].filter(Boolean);
     return {
       call: {
         id: String(data.call.id || input.callId),
@@ -454,7 +489,11 @@ export const api = {
         liveActivity: [],
       },
       prospect: mapMemoryFromChat(data.prospect),
-      learned: [] as string[],
+      learned: learned.length
+        ? learned.slice(0, 6)
+        : summary.summary
+          ? [summary.summary]
+          : ["Call memory merged into prospect"],
     };
   },
 

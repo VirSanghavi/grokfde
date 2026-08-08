@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const LINKS = [
-  { href: "#product", label: "Product" },
+  { href: "#demo", label: "Demo" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#channels", label: "Channels" },
-  { href: "/fde/grok-fde", label: "Demo" },
+  { href: "#product", label: "Product" },
+  { href: "/fde/grok-fde", label: "Talk to Atlas" },
 ];
 
 export function MarketingNav() {

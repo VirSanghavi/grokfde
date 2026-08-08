@@ -77,8 +77,15 @@ export async function GET(req: Request) {
       session: {
         voice: company.agent_voice || "eve",
         instructions,
-        turn_detection: { type: "server_vad" },
+        turn_detection: {
+          type: "server_vad",
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 500,
+        },
         tools,
+        // Enable user speech transcripts in the browser client
+        input_audio_transcription: { model: "whisper-1" },
       },
       context: {
         agentName: company.agent_name,

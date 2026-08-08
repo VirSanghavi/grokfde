@@ -755,6 +755,35 @@ export function IconPhoneOff(p: IconProps) {
   );
 }
 
+export function IconVideo(p: IconProps) {
+  return (
+    <Dotted
+      {...p}
+      mask={(id) => (
+        <mask id={id}>
+          <rect x="2.4" y="5" width="10.4" height="10" rx="1.8" fill="white" />
+          <path d="M13.2 8.2 L17.4 5.8 V14.2 L13.2 11.8 Z" fill="white" />
+        </mask>
+      )}
+    />
+  );
+}
+
+export function IconVideoOff(p: IconProps) {
+  return (
+    <Dotted
+      {...p}
+      mask={(id) => (
+        <mask id={id}>
+          <rect x="2.4" y="5" width="10.4" height="10" rx="1.8" fill="white" />
+          <path d="M13.2 8.2 L17.4 5.8 V14.2 L13.2 11.8 Z" fill="white" />
+          <path d="M3.5 3.8 L16.5 16.2" stroke="black" strokeWidth="1.8" strokeLinecap="round" />
+        </mask>
+      )}
+    />
+  );
+}
+
 export function IconMic(p: IconProps) {
   return (
     <Dotted
