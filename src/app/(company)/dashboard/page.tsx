@@ -59,11 +59,11 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md border diag-success px-2 py-1 text-[11px] font-medium">
               <IconStatusDot tone="success" />
-              Ingestion healthy
+              {data?.agent.knowledgeSourceCount ?? 0} sources
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md border diag-info px-2 py-1 text-[11px] font-medium">
               <IconStatusDot tone="info" />
-              LLM streaming
+              {data?.agent.mcpToolCount ?? 0} MCP tools
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md border diag-warning px-2 py-1 text-[11px] font-medium">
               <IconStatusDot tone="warning" />

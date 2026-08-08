@@ -24,6 +24,7 @@ const nav = [
   { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },
   { href: "/conversations", label: "Activity", icon: IconActivity },
   { href: "/accounts/pr_globex", label: "Accounts", icon: IconAccounts },
+  { href: "/deployments", label: "Deployments", icon: IconDeploy },
   { href: "/field-signals", label: "Signals", icon: IconChart },
   { href: "/agent", label: "Agent", icon: IconAgent },
 ];
@@ -117,30 +118,18 @@ export function Sidebar({
           onClick={() =>
             openDrawer({
               title: "MCP State Inspector",
-              subtitle: "Tool inventory · context window",
+              subtitle: "Live tool inventory · context composition",
               kind: "mcp",
             })
           }
           className={cn(
-            "mt-1 flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg",
+            "mt-1 flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-left text-sm font-medium text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg",
             sidebarCollapsed && "justify-center px-0",
           )}
         >
           <IconMcp size={18} />
           {!sidebarCollapsed && <span>MCP tools</span>}
         </button>
-
-        <Link
-          href="/conversations"
-          title="Deployments"
-          className={cn(
-            "flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg",
-            sidebarCollapsed && "justify-center px-0",
-          )}
-        >
-          <IconDeploy size={18} />
-          {!sidebarCollapsed && <span>Deployments</span>}
-        </Link>
       </nav>
 
       <div className={cn("border-t border-border p-3", sidebarCollapsed && "p-2")}>
