@@ -162,3 +162,19 @@ Merges into prospect memory; writes call + timeline messages.
 
 `GET /api/escalations?companyId=…&status=open`  
 `PATCH /api/escalations` `{ "id", "status": "resolved"|"dismissed"|"open" }`
+
+## Customer workspaces (implementation)
+
+`POST /api/workspaces` `{ prospectId, conversationId? }`  
+`GET /api/workspaces?prospectId=`  
+`GET /api/workspaces/:id`  
+
+`POST /api/workspaces/:id/repositories` `{ provider: "demo"|"github", repository? }`  
+`POST /api/workspaces/:id/analyze`  
+`POST /api/workspaces/:id/plan` `{ objective? }`  
+`POST /api/workspaces/:id/build` `{ planId }`  
+
+`GET /api/implementation-runs/:id`  
+`POST /api/implementation-runs/:id/pull-request`
+
+Safe defaults: branch off main, max 8 files, no deletes, protected path denylist, static VALIDATED checks (not claimed as full runtime TESTED unless a sandbox runner is configured).

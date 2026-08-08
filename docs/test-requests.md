@@ -184,3 +184,73 @@ curl -s -X POST $BASE/api/email/send \
 ```bash
 curl -s $BASE/api/conversations/$CONV_ID | jq '.messages | map({channel, role, content: .content[0:80]})'
 ```
+
+---
+
+# Implementation workspace (extension)
+
+Full flow after vendor + prospect exist.
+
+## Create workspace
+
+```bash
+WS=$(curl -s -X POST $BASE/api/workspaces \
+  -H 'Content-Type: application/json' \
+  -d "{\"prospectId\": \"$PROSPECT_ID\", \"conversationId\": \"$CONV_ID\"}")
+echo "$WS" | jq
+WS_ID=$(echo "$WS" | jq -r .workspace.id)
+```
+
+## Connect demo repository
+
+```bash
+curl -s -X POST $BASE/api/workspaces/$WS_ID/repositories \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"demo","repository":"globex/platform"}' | jq
+```
+
+## Analyze repository
+
+```bash
+curl -s -X POST $BASE/api/workspaces/$WS_ID/analyze | jq
+```
+
+Expect stack includes Next.js, TypeScript, Supabase.
+
+## Plan implementation
+
+```bash
+PLAN=$(curl -s -X POST $BASE/api/workspaces/$WS_ID/plan \
+  -H 'Content-Type: application/json' \
+  -d '{"objective":"Integrate Grok FDE into this customer'\''s app."}')
+echo "$PLAN" | jq
+PLAN_ID=$(echo "$PLAN" | jq -r .planId)
+```
+
+## Build (explicit approval)
+
+```bash
+BUILD=$(curl -s -X POST $BASE/api/workspaces/$WS_ID/build \
+  -H 'Content-Type: application/json' \
+  -d "{\"planId\": \"$PLAN_ID\"}")
+echo "$BUILD" | jq
+RUN_ID=$(echo "$BUILD" | jq -r .runId)
+```
+
+## Inspect run / diff / tests
+
+```bash
+curl -s $BASE/api/implementation-runs/$RUN_ID | jq '{status, branchName, files: [.files[].path], tests: [.tests[]|{name,status}]}'
+```
+
+## Prepare PR (simulated for demo repo)
+
+```bash
+curl -s -X POST $BASE/api/implementation-runs/$RUN_ID/pull-request | jq
+```
+
+## Workspace overview
+
+```bash
+curl -s $BASE/api/workspaces/$WS_ID | jq '{status: .workspace.status, repos: .repositories, plans: [.plans[].id], runs: [.runs[]|{id,status}]}'
+```
