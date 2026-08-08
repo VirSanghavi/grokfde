@@ -1,6 +1,6 @@
 "use client";
 
-import { IconKnowledge, IconStatusDot } from "@/components/icons/DottedIcon";
+import { IconKnowledge, IconStatusDot } from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
 import { cn } from "@/lib/utils";
 // cn imported from utils

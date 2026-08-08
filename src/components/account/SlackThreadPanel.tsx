@@ -4,7 +4,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { formatTime } from "@/lib/utils";
 import type { SlackThread } from "@/types/ui";
-import { X } from "lucide-react";
+import { IconX } from "@/components/icons";
+
 
 export function SlackThreadPanel({
   thread,
@@ -25,7 +26,7 @@ export function SlackThreadPanel({
           <p className="text-sm font-semibold text-fg">{thread.channelName}</p>
         </div>
         <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
-          <X className="h-4 w-4" />
+          <IconX className="h-4 w-4" />
         </Button>
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin">

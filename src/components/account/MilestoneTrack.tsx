@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { Milestone } from "@/types/ui";
-import { Check } from "lucide-react";
+import { IconCheck } from "@/components/icons";
+
 
 export function MilestoneTrack({ milestones }: { milestones: Milestone[] }) {
   return (
@@ -21,7 +22,7 @@ export function MilestoneTrack({ milestones }: { milestones: Milestone[] }) {
                   !done && !current && !blocked && "border-border bg-bg text-fg-faint"
                 )}
               >
-                {done ? <Check className="h-3.5 w-3.5" /> : current ? "→" : "○"}
+                {done ? <IconCheck className="h-3.5 w-3.5" /> : current ? "→" : "○"}
               </span>
               {i < milestones.length - 1 && (
                 <span

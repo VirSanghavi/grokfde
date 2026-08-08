@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoMark } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -35,11 +36,9 @@ export function MarketingNav() {
       >
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-1.5 pr-2 text-white"
+          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-2.5 text-white"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[10px] font-semibold tracking-tight text-slate-900">
-            FDE
-          </span>
+          <LogoMark size={28} variant="light" />
           <span className="text-[15px] font-semibold tracking-tight">Grok FDE</span>
         </Link>
 

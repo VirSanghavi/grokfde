@@ -7,10 +7,11 @@ import {
   WorkspaceProvider,
   useWorkspace,
 } from "@/components/layout/WorkspaceContext";
-import { IconStatusDot } from "@/components/icons/DottedIcon";
+import { IconStatusDot } from "@/components/icons";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { Menu, PanelRight, X } from "lucide-react";
+import { IconMenu, IconPanelRight, IconX } from "@/components/icons";
+
 import { useEffect, useState, type ReactNode } from "react";
 
 function ShellInner({ children }: { children: ReactNode }) {
@@ -56,9 +57,9 @@ function ShellInner({ children }: { children: ReactNode }) {
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-border text-fg-muted transition-premium hover:bg-bg-hover md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label="IconMenu"
           >
-            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {mobileOpen ? <IconX className="h-4 w-4" /> : <IconMenu className="h-4 w-4" />}
           </button>
 
           <div className="hidden items-center gap-2 md:flex">
@@ -95,7 +96,7 @@ function ShellInner({ children }: { children: ReactNode }) {
             )}
             aria-label="Toggle inspector"
           >
-            <PanelRight className="h-4 w-4" />
+            <IconPanelRight className="h-4 w-4" />
           </button>
         </div>
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { IconStatusDot } from "@/components/icons/DottedIcon";
+import { IconStatusDot } from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
 import { McpInspectorPanel } from "@/components/ops/McpInspectorPanel";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { IconX } from "@/components/icons";
+
 
 export function ContextDrawer() {
   const { drawerOpen, drawer, closeDrawer } = useWorkspace();
@@ -35,7 +36,7 @@ export function ContextDrawer() {
               className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-border text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg"
               aria-label="Close inspector"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </button>
           </header>
 

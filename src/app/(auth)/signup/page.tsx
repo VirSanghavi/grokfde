@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoMark } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -52,9 +53,7 @@ export default function SignupPage() {
     <div className="flex min-h-dvh items-center justify-center bg-bg px-4">
       <div className="w-full max-w-md rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-8 shadow-md">
         <div className="mb-8">
-          <span className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-brand font-mono text-[11px] font-semibold text-white">
-            FDE
-          </span>
+          <LogoMark size={36} variant="brand" className="mb-4" />
           <h1 className="text-xl font-semibold tracking-tight text-fg">Create your workspace</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Deploy an AI Forward-Deployed Engineer for your company.

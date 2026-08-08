@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { api } from "@/lib/api/client";
 import type { Conversation, Message, Prospect } from "@/types/ui";
-import { MessageSquare } from "lucide-react";
+import { IconMessage } from "@/components/icons";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -56,7 +57,7 @@ export default function ConversationsPage() {
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {conversations.length === 0 ? (
               <EmptyState
-                icon={<MessageSquare className="h-5 w-5" />}
+                icon={<IconMessage className="h-5 w-5" />}
                 title="No conversations yet"
                 description="When prospects talk to your FDE, they show up here."
               />

@@ -1,15 +1,16 @@
 import type { ImplementationEvent } from "@/types/ui";
 import { cn } from "@/lib/utils";
-import { Check, Loader2, Wrench, FileCode, FlaskConical, GitPullRequest } from "lucide-react";
+import { IconCheck, IconFileCode, IconFlask, IconGitPR, IconLoader, IconWrench } from "@/components/icons";
+
 
 function iconFor(type: string) {
-  if (type.includes("repair")) return Wrench;
-  if (type.includes("test")) return FlaskConical;
-  if (type.includes("file") || type.includes("modified")) return FileCode;
-  if (type.includes("pr")) return GitPullRequest;
+  if (type.includes("repair")) return IconWrench;
+  if (type.includes("test")) return IconFlask;
+  if (type.includes("file") || type.includes("modified")) return IconFileCode;
+  if (type.includes("pr")) return IconGitPR;
   if (type.includes("started") || type.includes("analyz") || type.includes("plann"))
-    return Loader2;
-  return Check;
+    return IconLoader;
+  return IconCheck;
 }
 
 export function RunTimeline({

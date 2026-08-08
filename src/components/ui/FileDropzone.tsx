@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Upload } from "lucide-react";
+import { IconUpload } from "@/components/icons";
+
 import { useCallback, useState } from "react";
 
 export function FileDropzone({
@@ -53,7 +54,7 @@ export function FileDropzone({
       }}
     >
       <div className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] border border-border bg-bg-surface text-fg-secondary">
-        <Upload className="h-5 w-5" />
+        <IconUpload className="h-5 w-5" />
       </div>
       <div>
         <p className="text-sm font-medium text-fg">{label}</p>

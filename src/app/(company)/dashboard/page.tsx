@@ -1,6 +1,6 @@
 "use client";
 
-import { IconStatusDot } from "@/components/icons/DottedIcon";
+import { IconStatusDot } from "@/components/icons";
 import { ActivityStream } from "@/components/ops/ActivityStream";
 import { IngestionPipeline } from "@/components/ops/IngestionPipeline";
 import { McpInspectorPanel } from "@/components/ops/McpInspectorPanel";

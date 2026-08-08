@@ -12,7 +12,8 @@ import {
   IconSettings,
   IconStatusDot,
   IconTerminal,
-} from "@/components/icons/DottedIcon";
+  LogoMark,
+} from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -53,10 +54,10 @@ export function Sidebar({
         <button
           type="button"
           onClick={toggleSidebar}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-brand transition-premium hover:bg-brand-strong"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-premium hover:opacity-90"
           aria-label="Toggle sidebar"
         >
-          <span className="font-mono text-[10px] font-semibold text-brand-fg">FDE</span>
+          <LogoMark size={36} variant="brand" className="rounded-[var(--radius-md)]" />
         </button>
         {!sidebarCollapsed && (
           <div className="min-w-0">

@@ -21,15 +21,8 @@ import type {
   Workspace,
   WorkspaceAnalysis,
 } from "@/types/ui";
-import {
-  ArrowLeft,
-  Check,
-  FolderGit,
-  GitPullRequest,
-  Loader2,
-  Play,
-  Server,
-} from "lucide-react";
+import { IconArrowLeft, IconCheck, IconFolderGit, IconGitPR, IconLoader, IconPlay, IconServer } from "@/components/icons";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -262,7 +255,7 @@ export default function WorkspacePage() {
           <div className="flex flex-wrap items-center gap-2">
             <ImplementationStatus status={displayStatus} large />
             <Link href={`/conversations/${conversationId}`}>
-              <Button size="sm" variant="ghost" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
+              <Button size="sm" variant="ghost" leftIcon={<IconArrowLeft className="h-3.5 w-3.5" />}>
                 Conversation
               </Button>
             </Link>
@@ -328,14 +321,14 @@ export default function WorkspacePage() {
                   disabled={busy}
                   className="flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-bg p-4 text-left transition-colors hover:border-border-strong hover:bg-bg-hover"
                 >
-                  <Server className="h-5 w-5 text-brand" />
+                  <IconServer className="h-5 w-5 text-brand" />
                   <div>
                     <p className="text-sm font-semibold text-fg">Use demo repository</p>
                     <p className="mt-1 text-xs text-fg-muted">globex/platform · one click</p>
                   </div>
                 </button>
                 <div className="flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-dashed border-border bg-bg/50 p-4 opacity-70">
-                  <FolderGit className="h-5 w-5 text-fg-faint" />
+                  <IconFolderGit className="h-5 w-5 text-fg-faint" />
                   <div>
                     <p className="text-sm font-semibold text-fg">Connect GitHub</p>
                     <p className="mt-1 text-xs text-fg-muted">Coming soon via Person B</p>
@@ -364,7 +357,7 @@ export default function WorkspacePage() {
                   size="lg"
                   loading={busy}
                   onClick={analyze}
-                  leftIcon={<Play className="h-4 w-4" />}
+                  leftIcon={<IconPlay className="h-4 w-4" />}
                 >
                   Analyze codebase
                 </Button>
@@ -392,9 +385,9 @@ export default function WorkspacePage() {
                   return (
                     <li key={label} className="flex items-center gap-2.5 text-sm">
                       {done && !active ? (
-                        <Check className="h-4 w-4 text-success" />
+                        <IconCheck className="h-4 w-4 text-success" />
                       ) : active ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-brand" />
+                        <IconLoader className="h-4 w-4 animate-spin text-brand" />
                       ) : (
                         <span className="h-4 w-4 rounded-full border border-border" />
                       )}
@@ -533,7 +526,7 @@ export default function WorkspacePage() {
                   <ul className="mt-2 space-y-1">
                     {plan.tests.map((t) => (
                       <li key={t} className="flex items-center gap-2 text-sm text-fg-secondary">
-                        <Check className="h-3.5 w-3.5 text-success" />
+                        <IconCheck className="h-3.5 w-3.5 text-success" />
                         {t}
                       </li>
                     ))}
@@ -594,7 +587,7 @@ export default function WorkspacePage() {
                       size="lg"
                       loading={busy}
                       onClick={preparePr}
-                      leftIcon={<GitPullRequest className="h-4 w-4" />}
+                      leftIcon={<IconGitPR className="h-4 w-4" />}
                     >
                       Prepare pull request
                     </Button>
@@ -606,7 +599,7 @@ export default function WorkspacePage() {
                       rel="noreferrer"
                       className="inline-flex"
                     >
-                      <Button size="lg" variant="secondary" leftIcon={<GitPullRequest className="h-4 w-4" />}>
+                      <Button size="lg" variant="secondary" leftIcon={<IconGitPR className="h-4 w-4" />}>
                         Open PR #{run.pr.number ?? ""}
                       </Button>
                     </a>

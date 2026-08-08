@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   description:
     "Train Grok on your company once. Let every customer talk to a technical engineer instantly across chat, email, voice, and Slack.",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2310B981'/><circle cx='10' cy='10' r='1.4' fill='%23ecfdf5' opacity='.9'/><circle cx='16' cy='10' r='1.4' fill='%23ecfdf5' opacity='.7'/><circle cx='22' cy='10' r='1.4' fill='%23ecfdf5' opacity='.5'/><circle cx='10' cy='16' r='1.4' fill='%23ecfdf5' opacity='.7'/><circle cx='16' cy='16' r='1.4' fill='%23ecfdf5' opacity='.95'/><circle cx='22' cy='16' r='1.4' fill='%23ecfdf5' opacity='.7'/><circle cx='10' cy='22' r='1.4' fill='%23ecfdf5' opacity='.5'/><circle cx='16' cy='22' r='1.4' fill='%23ecfdf5' opacity='.7'/><circle cx='22' cy='22' r='1.4' fill='%23ecfdf5' opacity='.4'/></svg>",
+    icon: "/brand/logo.svg",
+    apple: "/brand/logo.svg",
   },
 };
 

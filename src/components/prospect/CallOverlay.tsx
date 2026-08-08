@@ -13,7 +13,8 @@ import type {
   CallTranscriptLine,
   ProspectMemory,
 } from "@/types/ui";
-import { Mic, MicOff, PhoneOff, Subtitles, Volume2, X } from "lucide-react";
+import { IconMic, IconMicOff, IconPhoneOff, IconSubtitles, IconVolume, IconX } from "@/components/icons";
+
 import { useEffect, useRef, useState } from "react";
 
 interface CallOverlayProps {
@@ -210,7 +211,7 @@ export function CallOverlay({
             className="border-0 bg-white/10 text-white hover:bg-white/15"
             onClick={() => setShowTranscript((v) => !v)}
           >
-            <Subtitles className="h-4 w-4" />
+            <IconSubtitles className="h-4 w-4" />
           </IconButton>
           {status === "ended" ? (
             <IconButton
@@ -219,7 +220,7 @@ export function CallOverlay({
               className="border-0 bg-white/10 text-white hover:bg-white/15"
               onClick={onClose}
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </IconButton>
           ) : null}
         </div>
@@ -325,13 +326,13 @@ export function CallOverlay({
                 className="border-0 bg-white/10 text-white hover:bg-white/15"
                 onClick={() => setMuted((m) => !m)}
               >
-                {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                {muted ? <IconMicOff className="h-5 w-5" /> : <IconMic className="h-5 w-5" />}
               </IconButton>
               <Button
                 size="lg"
                 variant="danger"
                 className="min-w-[148px] border-0 bg-danger text-white hover:bg-danger/90"
-                leftIcon={<PhoneOff className="h-4 w-4" />}
+                leftIcon={<IconPhoneOff className="h-4 w-4" />}
                 onClick={endCall}
                 loading={status === "ending"}
               >
@@ -343,7 +344,7 @@ export function CallOverlay({
                 size="lg"
                 className="border-0 bg-white/10 text-white hover:bg-white/15"
               >
-                <Volume2 className="h-5 w-5" />
+                <IconVolume className="h-5 w-5" />
               </IconButton>
             </>
           ) : (

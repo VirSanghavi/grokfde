@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { IconX } from "@/components/icons";
+
 import { useEffect, type ReactNode } from "react";
 import { IconButton } from "./IconButton";
 
@@ -63,7 +64,7 @@ export function Modal({
             {description && <p className="mt-1 text-sm text-fg-muted">{description}</p>}
           </div>
           <IconButton label="Close" onClick={onClose} size="sm">
-            <X className="h-4 w-4" />
+            <IconX className="h-4 w-4" />
           </IconButton>
         </div>
         <div className="overflow-y-auto p-5 scrollbar-thin">{children}</div>

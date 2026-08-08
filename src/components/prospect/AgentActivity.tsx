@@ -1,22 +1,23 @@
 import type { AgentEvent } from "@/types/ui";
 import { cn } from "@/lib/utils";
-import { Loader2, Search, Sparkles, Wrench, UserRound, Globe } from "lucide-react";
+import { IconGlobe, IconLoader, IconSearch, IconSparkles, IconUser, IconWrench } from "@/components/icons";
+
 
 const iconFor = (type: AgentEvent["type"]) => {
   switch (type) {
     case "searching_knowledge":
-      return Search;
+      return IconSearch;
     case "searching_web":
-      return Globe;
+      return IconGlobe;
     case "using_tool":
-      return Wrench;
+      return IconWrench;
     case "generating_image":
     case "generating_architecture":
-      return Sparkles;
+      return IconSparkles;
     case "needs_human":
-      return UserRound;
+      return IconUser;
     default:
-      return Loader2;
+      return IconLoader;
   }
 };
 

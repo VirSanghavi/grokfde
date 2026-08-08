@@ -12,7 +12,7 @@ import {
   IconSearch,
   IconSettings,
   IconTerminal,
-} from "@/components/icons/DottedIcon";
+} from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";

@@ -1,5 +1,6 @@
-import Link from "next/link";
+import { LogoMark } from "@/components/icons";
 import { CinematicVideo } from "@/components/marketing/CinematicVideo";
+import Link from "next/link";
 
 const COLS = [
   {
@@ -71,7 +72,10 @@ export function MarketingFooter() {
       <div className="border-t border-white/10 bg-black">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           <div className="max-w-xs">
-            <p className="text-[17px] font-semibold tracking-tight text-white">Grok FDE</p>
+            <div className="flex items-center gap-2.5">
+              <LogoMark size={32} variant="brand" />
+              <p className="text-[17px] font-semibold tracking-tight text-white">Grok FDE</p>
+            </div>
             <p className="mt-3 text-[13.5px] leading-relaxed text-white/50">
               An AI forward-deployed engineer for technical companies. One trained agent.
               Every prospect gets an engineer.

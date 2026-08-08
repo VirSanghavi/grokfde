@@ -14,15 +14,8 @@ import { ImplementationStatus } from "@/components/workspace/ImplementationStatu
 import { api } from "@/lib/api/client";
 import { formatRelativeTime } from "@/lib/utils";
 import type { AccountRoom, SlackThread } from "@/types/ui";
-import {
-  AlertTriangle,
-  Check,
-  Code2,
-  ExternalLink,
-  MessageSquare,
-  Play,
-  Shield,
-} from "lucide-react";
+import { IconAlert, IconCheck, IconCode, IconExternalLink, IconMessage, IconPlay, IconShield } from "@/components/icons";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -107,11 +100,11 @@ export default function AccountRoomPage() {
         subtitle={`${stageLabel(room.stage)} · ${agentName} is the assigned FDE`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" loading={busy} onClick={advanceDemo} leftIcon={<Play className="h-3.5 w-3.5" />}>
+            <Button size="sm" variant="secondary" loading={busy} onClick={advanceDemo} leftIcon={<IconPlay className="h-3.5 w-3.5" />}>
               Advance demo
             </Button>
             <Link href={`/conversations/${room.conversationId}/workspace`}>
-              <Button size="sm" variant="secondary" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+              <Button size="sm" variant="secondary" leftIcon={<IconCode className="h-3.5 w-3.5" />}>
                 Implementation
               </Button>
             </Link>
@@ -142,7 +135,7 @@ export default function AccountRoomPage() {
                   </span>
                   <span className="text-fg-faint">·</span>
                   <span className="inline-flex items-center gap-1.5">
-                    <MessageSquare className="h-3.5 w-3.5" />
+                    <IconMessage className="h-3.5 w-3.5" />
                     Chat · Slack · Email · Calls
                   </span>
                 </div>
@@ -188,7 +181,7 @@ export default function AccountRoomPage() {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-danger" />
+                            <IconAlert className="h-4 w-4 text-danger" />
                             <Badge tone="danger">
                               {room.issue.environment === "Production"
                                 ? "Production issue"
@@ -234,7 +227,7 @@ export default function AccountRoomPage() {
                         <ul className="mt-4 space-y-1.5">
                           {room.successCriteria.map((c) => (
                             <li key={c} className="flex items-start gap-2 text-sm text-fg-secondary">
-                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                              <IconCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
                               {c}
                             </li>
                           ))}
@@ -395,7 +388,7 @@ export default function AccountRoomPage() {
                     <p className="mt-1 text-sm text-fg-muted">{room.atlasStatus}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Link href={`/conversations/${room.conversationId}/workspace`}>
-                        <Button leftIcon={<Code2 className="h-4 w-4" />}>
+                        <Button leftIcon={<IconCode className="h-4 w-4" />}>
                           Open implementation workspace
                         </Button>
                       </Link>
@@ -531,12 +524,12 @@ export default function AccountRoomPage() {
                     cross-account patterns.
                   </p>
                   <Link href="/field-signals" className="mt-4 inline-flex">
-                    <Button variant="secondary" rightIcon={<ExternalLink className="h-3.5 w-3.5" />}>
+                    <Button variant="secondary" rightIcon={<IconExternalLink className="h-3.5 w-3.5" />}>
                       Open Field Signals
                     </Button>
                   </Link>
                   <div className="mt-5 flex items-start gap-2 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-                    <Shield className="mt-0.5 h-4 w-4 text-brand" />
+                    <IconShield className="mt-0.5 h-4 w-4 text-brand" />
                     <p className="text-sm text-fg-secondary">
                       {agentName} surfaces repeated custom work and customer requests so Product
                       can turn FDE patterns into native features.

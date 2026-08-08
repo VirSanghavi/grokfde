@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { api } from "@/lib/api/client";
 import type { Message, Prospect } from "@/types/ui";
-import { ArrowLeft, Building2, Code2 } from "lucide-react";
+import { IconArrowLeft, IconBuilding, IconCode } from "@/components/icons";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -60,20 +61,20 @@ export default function ConversationDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {prospect && (
               <Link href={`/accounts/${prospect.id}`}>
-                <Button size="sm" variant="secondary" leftIcon={<Building2 className="h-3.5 w-3.5" />}>
+                <Button size="sm" variant="secondary" leftIcon={<IconBuilding className="h-3.5 w-3.5" />}>
                   Account Room
                 </Button>
               </Link>
             )}
             <Link href={`/conversations/${params.id}/workspace`}>
-              <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+              <Button size="sm" leftIcon={<IconCode className="h-3.5 w-3.5" />}>
                 {implStatus && implStatus !== "discovery"
                   ? "Open Implementation"
                   : "Start Implementation"}
               </Button>
             </Link>
             <Link href="/conversations">
-              <Button size="sm" variant="ghost" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
+              <Button size="sm" variant="ghost" leftIcon={<IconArrowLeft className="h-3.5 w-3.5" />}>
                 Inbox
               </Button>
             </Link>
@@ -96,7 +97,7 @@ export default function ConversationDetailPage() {
                 {implStatus ? ` Current status: ${implStatus.replace(/_/g, " ")}.` : ""}
               </p>
               <Link href={`/conversations/${params.id}/workspace`} className="mt-3 inline-flex">
-                <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+                <Button size="sm" leftIcon={<IconCode className="h-3.5 w-3.5" />}>
                   {implStatus && implStatus !== "discovery"
                     ? "Continue Implementation"
                     : "Start Implementation"}

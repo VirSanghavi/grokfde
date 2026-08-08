@@ -1,6 +1,6 @@
 "use client";
 
-import { IconStatusDot } from "@/components/icons/DottedIcon";
+import { IconStatusDot } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 const TOOLS = [

@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/Badge";
 import type { ImplementationTest } from "@/types/ui";
-import { CheckCircle2, Circle, Loader2, XCircle } from "lucide-react";
+import { IconCheckCircle, IconCircle, IconLoader, IconXCircle } from "@/components/icons";
+
 
 export function TestResults({ tests }: { tests: ImplementationTest[] }) {
   if (!tests.length) {
@@ -13,12 +14,12 @@ export function TestResults({ tests }: { tests: ImplementationTest[] }) {
         const status = String(test.status).toLowerCase();
         const Icon =
           status === "passed"
-            ? CheckCircle2
+            ? IconCheckCircle
             : status === "failed"
-              ? XCircle
+              ? IconXCircle
               : status === "running"
-                ? Loader2
-                : Circle;
+                ? IconLoader
+                : IconCircle;
         const tone =
           status === "passed"
             ? "success"

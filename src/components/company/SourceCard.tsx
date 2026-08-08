@@ -2,17 +2,18 @@ import { Badge } from "@/components/ui/Badge";
 import { StatusDot } from "@/components/ui/StatusDot";
 import { formatRelativeTime } from "@/lib/utils";
 import type { KnowledgeSource } from "@/types/ui";
-import { FileText, Globe, Link2, Server } from "lucide-react";
+import { IconFile, IconGlobe, IconLink, IconServer } from "@/components/icons";
+
 
 const icons = {
-  file: FileText,
-  paste: FileText,
-  url: Globe,
-  mcp: Server,
+  file: IconFile,
+  paste: IconFile,
+  url: IconGlobe,
+  mcp: IconServer,
 };
 
 export function SourceCard({ source }: { source: KnowledgeSource }) {
-  const Icon = icons[source.type] ?? Link2;
+  const Icon = icons[source.type] ?? IconLink;
   const tone =
     source.status === "ready"
       ? "success"

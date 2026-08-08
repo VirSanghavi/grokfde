@@ -9,7 +9,8 @@ import { StatusDot } from "@/components/ui/StatusDot";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api/client";
 import type { Company, McpServer, SlackConnection } from "@/types/ui";
-import { Check, Copy, ExternalLink, MessageSquare, RotateCcw } from "lucide-react";
+import { IconCheck, IconCopy, IconExternalLink, IconMessage, IconRefresh } from "@/components/icons";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -76,7 +77,7 @@ export default function AgentPage() {
 
           <div className="rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-brand" />
+              <IconMessage className="h-4 w-4 text-brand" />
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
                 Slack
               </p>
@@ -150,7 +151,7 @@ export default function AgentPage() {
                 size="sm"
                 variant="secondary"
                 leftIcon={
-                  copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />
+                  copied ? <IconCheck className="h-3.5 w-3.5" /> : <IconCopy className="h-3.5 w-3.5" />
                 }
                 onClick={async () => {
                   await navigator.clipboard.writeText(prospectUrl);
@@ -159,10 +160,10 @@ export default function AgentPage() {
                   setTimeout(() => setCopied(false), 2000);
                 }}
               >
-                Copy link
+                IconCopy link
               </Button>
               <Link href={`/fde/${company.slug}`}>
-                <Button size="sm" rightIcon={<ExternalLink className="h-3.5 w-3.5" />}>
+                <Button size="sm" rightIcon={<IconExternalLink className="h-3.5 w-3.5" />}>
                   Open as prospect
                 </Button>
               </Link>
@@ -202,7 +203,7 @@ export default function AgentPage() {
               className="mt-4"
               size="sm"
               variant="outline"
-              leftIcon={<RotateCcw className="h-3.5 w-3.5" />}
+              leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
               onClick={async () => {
                 await api.resetDemo();
                 push("Demo reset", "success");

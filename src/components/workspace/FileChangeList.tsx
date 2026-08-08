@@ -3,7 +3,8 @@
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import type { ImplementationFile } from "@/types/ui";
-import { FileCode2 } from "lucide-react";
+import { IconFileCode } from "@/components/icons";
+
 
 export function FileChangeList({
   files,
@@ -41,7 +42,7 @@ export function FileChangeList({
                 : "border-border bg-bg-elevated hover:bg-bg-hover"
             )}
           >
-            <FileCode2 className="h-4 w-4 shrink-0 text-fg-faint" />
+            <IconFileCode className="h-4 w-4 shrink-0 text-fg-faint" />
             <span
               className={cn(
                 "w-4 shrink-0 font-mono text-sm font-semibold",

@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoMark } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -43,9 +44,7 @@ function LoginForm() {
     <div className="flex min-h-dvh items-center justify-center bg-bg px-4">
       <div className="w-full max-w-md rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-8 shadow-md">
         <div className="mb-8 flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand font-mono text-[11px] font-semibold text-white">
-            FDE
-          </span>
+          <LogoMark size={36} variant="brand" />
           <div>
             <p className="text-sm font-semibold text-fg">Sign in to Grok FDE</p>
             <p className="text-xs text-fg-muted">Company workspace</p>

@@ -18,7 +18,8 @@ import type {
   Prospect,
   ProspectMemory,
 } from "@/types/ui";
-import { Code2, Mail, Phone, PanelRight, Send, Sparkles } from "lucide-react";
+import { IconCode, IconMail, IconPanelRight, IconPhone, IconSend, IconSparkles } from "@/components/icons";
+
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -182,7 +183,7 @@ export function ProspectChat({
               size="sm"
               variant="ghost"
               className="hidden sm:inline-flex"
-              leftIcon={<Mail className="h-3.5 w-3.5" />}
+              leftIcon={<IconMail className="h-3.5 w-3.5" />}
               onClick={() => push("Email draft queued (mock)", "default")}
             >
               Email me this
@@ -191,7 +192,7 @@ export function ProspectChat({
               size="sm"
               variant="secondary"
               className="hidden md:inline-flex"
-              leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+              leftIcon={<IconSparkles className="h-3.5 w-3.5" />}
               onClick={generateArchitecture}
               disabled={sending}
             >
@@ -202,7 +203,7 @@ export function ProspectChat({
                 <Button
                   size="sm"
                   variant="secondary"
-                  leftIcon={<Code2 className="h-3.5 w-3.5" />}
+                  leftIcon={<IconCode className="h-3.5 w-3.5" />}
                 >
                   Start Implementation
                 </Button>
@@ -211,7 +212,7 @@ export function ProspectChat({
             <Button
               size="sm"
               className="glow-accent"
-              leftIcon={<Phone className="h-3.5 w-3.5" />}
+              leftIcon={<IconPhone className="h-3.5 w-3.5" />}
               onClick={() => setCallOpen(true)}
             >
               Call {company.agentName}
@@ -222,7 +223,7 @@ export function ProspectChat({
               variant="solid"
               onClick={() => setShowMemory((v) => !v)}
             >
-              <PanelRight className="h-4 w-4" />
+              <IconPanelRight className="h-4 w-4" />
             </IconButton>
           </div>
         </div>
@@ -281,14 +282,14 @@ export function ProspectChat({
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link href={`/conversations/${conversationId}/workspace`}>
-                    <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+                    <Button size="sm" leftIcon={<IconCode className="h-3.5 w-3.5" />}>
                       Start Implementation
                     </Button>
                   </Link>
                   <Button
                     size="sm"
                     variant="secondary"
-                    leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+                    leftIcon={<IconSparkles className="h-3.5 w-3.5" />}
                     onClick={generateArchitecture}
                     disabled={sending}
                   >
@@ -323,9 +324,9 @@ export function ProspectChat({
                   className="shrink-0"
                   disabled={!input.trim() || sending}
                   onClick={send}
-                  aria-label="Send"
+                  aria-label="IconSend"
                 >
-                  <Send className="h-4 w-4" />
+                  <IconSend className="h-4 w-4" />
                 </Button>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">

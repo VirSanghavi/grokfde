@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api/client";
 import type { KnowledgeSource, McpServer } from "@/types/ui";
-import { FileText, Globe, Plus, Server, Upload } from "lucide-react";
+import { IconFile, IconGlobe, IconPlus, IconServer, IconUpload } from "@/components/icons";
+
 import { useCallback, useEffect, useState } from "react";
 
 type ModalKind = "upload" | "paste" | "url" | "mcp" | null;
@@ -51,7 +52,7 @@ export default function KnowledgePage() {
       for (const f of files) {
         await api.uploadKnowledge({ title: f.name, type: "file" });
       }
-      push("Upload started", "success");
+      push("IconUpload started", "success");
       setModal(null);
       load();
     } finally {
@@ -114,16 +115,16 @@ export default function KnowledgePage() {
         subtitle="Everything your FDE knows"
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" leftIcon={<Upload className="h-3.5 w-3.5" />} onClick={() => setModal("upload")}>
-              Upload
+            <Button size="sm" variant="secondary" leftIcon={<IconUpload className="h-3.5 w-3.5" />} onClick={() => setModal("upload")}>
+              IconUpload
             </Button>
-            <Button size="sm" variant="secondary" leftIcon={<FileText className="h-3.5 w-3.5" />} onClick={() => setModal("paste")}>
+            <Button size="sm" variant="secondary" leftIcon={<IconFile className="h-3.5 w-3.5" />} onClick={() => setModal("paste")}>
               Paste
             </Button>
-            <Button size="sm" variant="secondary" leftIcon={<Globe className="h-3.5 w-3.5" />} onClick={() => setModal("url")}>
+            <Button size="sm" variant="secondary" leftIcon={<IconGlobe className="h-3.5 w-3.5" />} onClick={() => setModal("url")}>
               URL
             </Button>
-            <Button size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setModal("mcp")}>
+            <Button size="sm" leftIcon={<IconPlus className="h-3.5 w-3.5" />} onClick={() => setModal("mcp")}>
               MCP
             </Button>
           </div>
@@ -153,7 +154,7 @@ export default function KnowledgePage() {
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-call">
-                            <Server className="h-4 w-4" />
+                            <IconServer className="h-4 w-4" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-fg">{server.label}</p>
@@ -185,7 +186,7 @@ export default function KnowledgePage() {
       <Modal
         open={modal === "upload"}
         onClose={() => setModal(null)}
-        title="Upload files"
+        title="IconUpload files"
         description="Drop documentation your FDE should learn."
       >
         <FileDropzone onFiles={handleUpload} />
@@ -249,7 +250,7 @@ export default function KnowledgePage() {
             placeholder="Internal Platform"
           />
           <Input
-            label="Server URL"
+            label="IconServer URL"
             value={mcpUrl}
             onChange={(e) => setMcpUrl(e.target.value)}
             placeholder="https://mcp.yourcompany.com"

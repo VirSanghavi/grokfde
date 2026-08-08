@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { api } from "@/lib/api/client";
 import type { FieldSignal, Playbook } from "@/types/ui";
-import { Lightbulb, Layers } from "lucide-react";
+import { IconLayers, IconLightbulb } from "@/components/icons";
+
 import { useEffect, useState } from "react";
 
 export default function FieldSignalsPage() {
@@ -47,7 +48,7 @@ export default function FieldSignalsPage() {
                 <h3 className="mt-2 text-base font-semibold text-fg">{s.title}</h3>
                 {s.recommendation && (
                   <div className="mt-3 flex gap-2 rounded-[var(--radius-md)] border border-brand-border bg-brand-dim px-3 py-2.5">
-                    <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                    <IconLightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                     <div>
                       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-brand">
                         Product opportunity
@@ -62,7 +63,7 @@ export default function FieldSignalsPage() {
 
           <section>
             <div className="mb-3 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-fg-faint" />
+              <IconLayers className="h-4 w-4 text-fg-faint" />
               <h2 className="text-sm font-semibold text-fg">Reusable patterns</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

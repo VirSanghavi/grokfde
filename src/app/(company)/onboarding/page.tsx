@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import type { CompanyKnowledgeSummary } from "@/types/ui";
-import { FileText, Globe, Link2, Server, Upload } from "lucide-react";
+import { IconFile, IconGlobe, IconLink, IconServer, IconUpload } from "@/components/icons";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -217,17 +218,17 @@ export default function OnboardingPage() {
                 Teach {agentName}
               </h1>
               <p className="mt-2 text-sm text-fg-muted">
-                Upload everything a forward-deployed engineer would need to know.
+                IconUpload everything a forward-deployed engineer would need to know.
               </p>
             </div>
 
             {!teachMode && (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: "upload" as const, icon: Upload, label: "Upload files" },
-                  { id: "paste" as const, icon: FileText, label: "Paste text" },
-                  { id: "url" as const, icon: Globe, label: "Add URL" },
-                  { id: "mcp" as const, icon: Server, label: "Connect MCP" },
+                  { id: "upload" as const, icon: IconUpload, label: "IconUpload files" },
+                  { id: "paste" as const, icon: IconFile, label: "Paste text" },
+                  { id: "url" as const, icon: IconGlobe, label: "Add URL" },
+                  { id: "mcp" as const, icon: IconServer, label: "Connect MCP" },
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -300,7 +301,7 @@ export default function OnboardingPage() {
                   onChange={(e) => setMcpLabel(e.target.value)}
                 />
                 <Input
-                  label="Server URL"
+                  label="IconServer URL"
                   value={mcpUrl}
                   onChange={(e) => setMcpUrl(e.target.value)}
                 />
@@ -317,7 +318,7 @@ export default function OnboardingPage() {
 
             {sourcesAdded > 0 && !teachMode && (
               <p className="flex items-center gap-2 text-sm text-success">
-                <Link2 className="h-4 w-4" />
+                <IconLink className="h-4 w-4" />
                 {sourcesAdded} source{sourcesAdded === 1 ? "" : "s"} added
               </p>
             )}
