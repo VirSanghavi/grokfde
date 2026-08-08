@@ -8,14 +8,13 @@ type Props = {
   poster: string;
   className?: string;
   overlayClassName?: string;
-  /** darker bottom gradient for text legibility */
   gradient?: "hero" | "footer" | "none";
 };
 
 /**
- * Full-bleed looping background video with poster fallback.
- * Muted + playsInline required for autoplay across browsers.
- * Respects prefers-reduced-motion (poster only).
+ * Full-bleed cinematic background.
+ * Prefer smooth MP4; CSS sway fallback keeps motion silky if video fails.
+ * Motion is a slow ease sway — never a stepped Ken Burns jump.
  */
 export function CinematicVideo({
   src,
@@ -35,9 +34,8 @@ export function CinematicVideo({
         video.pause();
         video.removeAttribute("autoplay");
       } else {
-        void video.play().catch(() => {
-          /* autoplay blocked — poster remains */
-        });
+        video.muted = true;
+        void video.play().catch(() => {});
       }
     };
     apply();
@@ -46,25 +44,37 @@ export function CinematicVideo({
   }, []);
 
   return (
-    <div className={cn("absolute inset-0 overflow-hidden bg-slate-900", className)}>
-      <video
-        ref={ref}
-        className="absolute inset-0 h-full w-full object-cover"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster={poster}
-        aria-hidden
-      >
-        <source src={src} type="video/mp4" />
-      </video>
+    <div className={cn("absolute inset-0 overflow-hidden bg-[#0a0e14]", className)}>
+      {/* CSS sway layer — always on poster for continuity; video sits on top when playing */}
+      <div className="marketing-sway absolute inset-[-6%]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={poster}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+        <video
+          ref={ref}
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={poster}
+          aria-hidden
+        >
+          <source src={src} type="video/mp4" />
+        </video>
+      </div>
+
       {gradient === "hero" && (
         <div
           className={cn(
             "pointer-events-none absolute inset-0",
-            "bg-[linear-gradient(180deg,rgba(8,12,18,0.22)_0%,rgba(8,12,18,0.1)_32%,rgba(8,12,18,0.48)_68%,rgba(8,12,18,0.82)_100%)]",
+            // Soft vignette like Leaki: light top, deeper bottom-left for type
+            "bg-[linear-gradient(180deg,rgba(10,14,20,0.12)_0%,rgba(10,14,20,0.05)_28%,rgba(10,14,20,0.35)_58%,rgba(10,14,20,0.72)_100%)]",
             overlayClassName,
           )}
         />
@@ -73,7 +83,7 @@ export function CinematicVideo({
         <div
           className={cn(
             "pointer-events-none absolute inset-0",
-            "bg-[linear-gradient(180deg,rgba(0,0,0,0.38)_0%,rgba(0,0,0,0.52)_42%,rgba(0,0,0,0.94)_80%,#000_100%)]",
+            "bg-[linear-gradient(180deg,rgba(0,0,0,0.45)_0%,rgba(0,0,0,0.55)_40%,rgba(0,0,0,0.92)_78%,#000_100%)]",
             overlayClassName,
           )}
         />

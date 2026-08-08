@@ -96,6 +96,49 @@
     background: #000;
   }
 
+  .marketing-root {
+    font-feature-settings: "ss01" on, "cv11" on;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .marketing-display {
+    font-family: var(--font-geist-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .marketing-body {
+    font-family: var(--font-geist-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 400;
+  }
+
+  /* Slow cinematic sway — ease-in-out, no stepped Ken Burns */
+  @keyframes marketing-sway {
+    0% {
+      transform: scale(1.04) translate3d(-0.6%, -0.35%, 0);
+    }
+    50% {
+      transform: scale(1.08) translate3d(0.7%, 0.4%, 0);
+    }
+    100% {
+      transform: scale(1.04) translate3d(-0.6%, -0.35%, 0);
+    }
+  }
+
+  .marketing-sway {
+    will-change: transform;
+    transform-origin: center center;
+    animation: marketing-sway 28s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-sway {
+      animation: none;
+      transform: scale(1.05);
+    }
+  }
+
   ::selection {
     background: var(--color-brand-dim);
     color: var(--color-fg);
