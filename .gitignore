@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+dist/
+
+# env / secrets — open source: never commit real keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+service-account*.json
+
+# debug / tooling
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+tsconfig.tsbuildinfo
+next-env.d.ts
+coverage/
+.turbo/
+
+# editor / agent / local junk
+.grok/
+.idea/
+.vscode/
+*.swp
+.cursor/
+.claude/
+
+# vercel / deploy
+.vercel
+
+# OS
+Thumbs.db
+
