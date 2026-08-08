@@ -175,8 +175,8 @@ That is the product. Continuity of ownership. Not a chatbot that forgets.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/LiamBMX/grokathon-build.git
-cd grokathon-build
+git clone https://github.com/VirSanghavi/grokfde.git
+cd grokfde
 npm install
 ```
 
@@ -229,6 +229,29 @@ bash docs/smoke-test.sh
 |----------------------|----------|
 | `false` (default for launch) | Real Grok + Supabase APIs |
 | `true` | UI mock layer for offline demos |
+
+### Deploy to Vercel
+
+1. Import **https://github.com/VirSanghavi/grokfde** in the Vercel dashboard (or `vercel` CLI).
+2. Framework preset: **Next.js** (auto-detected).
+3. Add environment variables from `.env.example` (Production + Preview):
+
+| Required | Notes |
+|----------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable / anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only; never expose to client |
+| `XAI_API_KEY` | Grok API key |
+| `NEXT_PUBLIC_MOCK_AI` | Set to `false` |
+| `NEXT_PUBLIC_APP_URL` | Your Vercel URL, e.g. `https://grokfde.vercel.app` |
+
+Optional: `XAI_MANAGEMENT_API_KEY`, Slack, Resend/email, `GITHUB_TOKEN`.
+
+4. Apply SQL migrations in `supabase/migrations/` to the same Supabase project (SQL editor or `supabase db push`).
+5. In Supabase Auth → URL config, add your Vercel domain to **Site URL** and **Redirect URLs** (`https://your-app.vercel.app/**`).
+6. Deploy. Health check: `https://your-app.vercel.app/api/health`
+
+The app is a single Next.js project. No separate backend service.
 
 ---
 

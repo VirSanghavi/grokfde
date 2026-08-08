@@ -18,7 +18,7 @@ const COLS = [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/onboarding", label: "Get started" },
       { href: "/login", label: "Sign in" },
-      { href: "https://github.com/LiamBMX/grokathon-build", label: "GitHub" },
+      { href: "https://github.com/VirSanghavi/grokfde", label: "GitHub" },
     ],
   },
   {
