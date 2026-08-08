@@ -9,13 +9,22 @@ import { StatusDot } from "@/components/ui/StatusDot";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api/client";
 import { formatRelativeTime } from "@/lib/utils";
-import type { DashboardData } from "@/types/ui";
-import { ArrowUpRight, Phone, MessageSquare, Users, AlertCircle } from "lucide-react";
+import type { FdeDashboardData } from "@/types/ui";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  Building2,
+  Code2,
+  Lightbulb,
+  OctagonAlert,
+  Rocket,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<FdeDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const { push } = useToast();
 
@@ -23,7 +32,7 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const d = await api.getDashboard();
-      setData(d);
+      setData(d as FdeDashboardData);
     } finally {
       setLoading(false);
     }
@@ -37,51 +46,93 @@ export default function DashboardPage() {
     return <LoadingState label="Loading dashboard" className="flex-1" />;
   }
 
+  const m = data.metrics;
   const metrics = [
-    { label: "Active prospects", value: data.metrics.activeProspects, icon: Users },
-    { label: "Conversations", value: data.metrics.conversations, icon: MessageSquare },
-    { label: "Calls", value: data.metrics.calls, icon: Phone },
-    { label: "Needs your help", value: data.metrics.needsHelp, icon: AlertCircle, alert: true },
+    {
+      label: "Active accounts",
+      value: m.activeAccounts ?? m.activeProspects,
+      icon: Building2,
+    },
+    {
+      label: "Implementations",
+      value: m.implementations ?? 0,
+      icon: Code2,
+    },
+    {
+      label: "Production",
+      value: m.production ?? 0,
+      icon: Rocket,
+    },
+    {
+      label: "Blocked",
+      value: m.blocked ?? 0,
+      icon: OctagonAlert,
+      alert: (m.blocked ?? 0) > 0,
+    },
+    {
+      label: "Needs you",
+      value: m.needsHelp,
+      icon: AlertCircle,
+      alert: true,
+    },
+    {
+      label: "Conversations",
+      value: m.conversations,
+      icon: Users,
+    },
   ];
 
   return (
     <>
       <TopNav
         title="Dashboard"
-        subtitle="What needs attention right now"
+        subtitle="FDE operating view — accounts, blockers, and field signals"
         actions={
-          <Link href="/fde/grok-fde">
-            <Button size="sm" variant="secondary" rightIcon={<ArrowUpRight className="h-3.5 w-3.5" />}>
-              Prospect view
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/accounts/pr_globex">
+              <Button size="sm" variant="secondary">
+                Globex Account Room
+              </Button>
+            </Link>
+            <Link href="/fde/grok-fde">
+              <Button
+                size="sm"
+                variant="secondary"
+                rightIcon={<ArrowUpRight className="h-3.5 w-3.5" />}
+              >
+                Prospect view
+              </Button>
+            </Link>
+          </div>
         }
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         <div className="mx-auto max-w-6xl space-y-8 px-5 py-8 sm:px-8">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {metrics.map((m) => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {metrics.map((item) => (
               <div
-                key={m.label}
-                className={`rounded-[var(--radius-xl)] border p-5 shadow-sm ${
-                  m.alert
+                key={item.label}
+                className={`rounded-[var(--radius-xl)] border p-4 shadow-sm ${
+                  item.alert
                     ? "border-danger/25 bg-danger/5"
                     : "border-border bg-bg-elevated"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-fg-muted">{m.label}</p>
-                  <m.icon className={`h-4 w-4 ${m.alert ? "text-danger" : "text-fg-faint"}`} />
+                  <p className="text-xs text-fg-muted">{item.label}</p>
+                  <item.icon
+                    className={`h-4 w-4 ${item.alert ? "text-danger" : "text-fg-faint"}`}
+                  />
                 </div>
-                <p className="mt-3 font-mono text-3xl tabular tracking-tight text-fg">
-                  {m.value}
+                <p className="mt-3 font-mono text-2xl tabular tracking-tight text-fg">
+                  {item.value}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-fg">Needs you</h2>
@@ -103,6 +154,27 @@ export default function DashboardPage() {
                     }}
                   />
                 ))
+              )}
+
+              {data.blockedAccounts && data.blockedAccounts.length > 0 && (
+                <div className="pt-4">
+                  <h2 className="mb-3 text-sm font-semibold text-fg">Blocked accounts</h2>
+                  <div className="space-y-2">
+                    {data.blockedAccounts.map((a) => (
+                      <Link
+                        key={a.id}
+                        href={`/accounts/${a.id}`}
+                        className="flex items-center justify-between rounded-[var(--radius-lg)] border border-danger/20 bg-bg-elevated px-4 py-3 shadow-sm transition-colors hover:bg-bg-hover"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-fg">{a.name}</p>
+                          <p className="text-xs text-fg-muted">{a.blocker}</p>
+                        </div>
+                        <Badge tone="danger">Blocked</Badge>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               )}
             </section>
 
@@ -129,6 +201,49 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-xs text-fg-muted">MCP tools</p>
                   </div>
+                </div>
+                {data.atlasActivity && (
+                  <ul className="mt-4 space-y-2 border-t border-border pt-4">
+                    {data.atlasActivity.map((a) => (
+                      <li key={a.label} className="text-xs text-fg-muted">
+                        <span className="text-fg-secondary">{a.label}</span>
+                        <span className="ml-2 font-mono text-fg-faint">
+                          {formatRelativeTime(a.at)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-fg">Recent field signals</h2>
+                  <Link
+                    href="/field-signals"
+                    className="text-xs font-medium text-brand hover:text-fg"
+                  >
+                    View all
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {(data.fieldSignalsPreview || []).map((s) => (
+                    <div
+                      key={s.id}
+                      className="rounded-[var(--radius-lg)] border border-border bg-bg-elevated px-4 py-3 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Lightbulb className="h-3.5 w-3.5 text-brand" />
+                        <span className="font-mono text-[11px] text-fg-faint">
+                          {s.accountCount} accounts
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-medium text-fg">{s.title}</p>
+                    </div>
+                  ))}
+                  {!data.fieldSignalsPreview?.length && (
+                    <p className="text-sm text-fg-muted">No field signals yet.</p>
+                  )}
                 </div>
               </section>
 

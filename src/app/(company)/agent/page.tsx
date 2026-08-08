@@ -8,8 +8,8 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusDot } from "@/components/ui/StatusDot";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api/client";
-import type { Company, McpServer } from "@/types/ui";
-import { Check, Copy, ExternalLink, RotateCcw } from "lucide-react";
+import type { Company, McpServer, SlackConnection } from "@/types/ui";
+import { Check, Copy, ExternalLink, MessageSquare, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -18,18 +18,22 @@ export default function AgentPage() {
   const [mcp, setMcp] = useState<McpServer[]>([]);
   const [sourceCount, setSourceCount] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [slack, setSlack] = useState<SlackConnection[]>([]);
+  const [slackBusy, setSlackBusy] = useState(false);
   const { push } = useToast();
 
   useEffect(() => {
     (async () => {
-      const [c, sources, servers] = await Promise.all([
+      const [c, sources, servers, channels] = await Promise.all([
         api.getCompany(),
         api.getKnowledge(),
         api.getMcpServers(),
+        api.getSlackChannels(),
       ]);
       setCompany(c);
       setSourceCount(sources.length);
       setMcp(servers);
+      setSlack(channels);
     })();
   }, []);
 
@@ -68,6 +72,70 @@ export default function AgentPage() {
               />
               <Stat label="Voice" value={company.agentVoice ?? "default"} />
             </div>
+          </div>
+
+          <div className="rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-brand" />
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+                Slack
+              </p>
+            </div>
+            <p className="mt-2 text-sm text-fg-muted">
+              Connect Atlas to customer Slack channels. Web is the control room — Slack is where
+              the FDE lives day to day.
+            </p>
+            {slack.length > 0 ? (
+              <div className="mt-4 space-y-2">
+                {slack.map((ch) => (
+                  <div
+                    key={ch.id}
+                    className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="success">Connected</Badge>
+                      <span className="font-mono text-sm text-fg">{ch.channelName}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-fg-muted">
+                      Workspace: {ch.workspaceName} · Bot: {ch.botName || "Atlas"}
+                    </p>
+                    {ch.permissions && (
+                      <p className="mt-1 text-xs text-fg-faint">
+                        {ch.permissions.join(" · ")}
+                      </p>
+                    )}
+                    <Link
+                      href="/accounts/pr_globex"
+                      className="mt-2 inline-flex text-xs font-medium text-brand hover:text-fg"
+                    >
+                      Open Account Room →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Button
+                className="mt-4"
+                size="sm"
+                loading={slackBusy}
+                onClick={async () => {
+                  setSlackBusy(true);
+                  try {
+                    const conn = await api.connectSlack({
+                      workspaceName: "Globex",
+                      channelName: "#globex-grok-fde",
+                      prospectId: "pr_globex",
+                    });
+                    setSlack([conn]);
+                    push("Slack connected", "success");
+                  } finally {
+                    setSlackBusy(false);
+                  }
+                }}
+              >
+                Connect Slack
+              </Button>
+            )}
           </div>
 
           <div className="rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-5 shadow-sm">

@@ -18,7 +18,8 @@ import type {
   Prospect,
   ProspectMemory,
 } from "@/types/ui";
-import { Mail, Phone, PanelRight, Send, Sparkles } from "lucide-react";
+import { Code2, Mail, Phone, PanelRight, Send, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function ProspectChat({
@@ -196,6 +197,17 @@ export function ProspectChat({
             >
               Architecture
             </Button>
+            {conversationId && (
+              <Link href={`/conversations/${conversationId}/workspace`} className="hidden sm:inline-flex">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<Code2 className="h-3.5 w-3.5" />}
+                >
+                  Start Implementation
+                </Button>
+              </Link>
+            )}
             <Button
               size="sm"
               className="glow-accent"
@@ -254,6 +266,38 @@ export function ProspectChat({
               </div>
             )}
 
+            {/* Implementation bridge — same FDE continues into the codebase */}
+            {conversationId && prospect.memory.currentStack.length > 0 && (
+              <div className="mx-auto max-w-2xl animate-in rounded-[var(--radius-xl)] border border-border bg-bg-elevated p-4 shadow-sm">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+                  Next step
+                </p>
+                <p className="mt-1 text-sm font-medium text-fg">
+                  {company.agentName} can implement the integration in your environment
+                </p>
+                <p className="mt-1 text-sm text-fg-muted">
+                  Connect a repo, review the plan, watch the build, inspect the diff, approve the PR.
+                  Nothing deploys without you.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href={`/conversations/${conversationId}/workspace`}>
+                    <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+                      Start Implementation
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+                    onClick={generateArchitecture}
+                    disabled={sending}
+                  >
+                    View Architecture
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div ref={bottomRef} />
           </div>
 
@@ -286,9 +330,9 @@ export function ProspectChat({
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
-                  "We use Kubernetes on AWS. Could Grok FDE fit into our workflow?",
+                  "We use Next.js and Supabase. Could Grok FDE work with our app?",
+                  "Can you actually integrate it?",
                   "What would you recommend given our current stack?",
-                  "Can you support a custom HIPAA agreement?",
                   "Draft an architecture for us",
                 ].map((suggestion) => (
                   <button

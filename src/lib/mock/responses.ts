@@ -11,6 +11,9 @@ const STACK_PATTERNS: Array<{ re: RegExp; label: string }> = [
   { re: /\bterraform\b/i, label: "Terraform" },
   { re: /\bdocker\b/i, label: "Docker" },
   { re: /\bpostgres(ql)?\b/i, label: "PostgreSQL" },
+  { re: /\bnext\.?js\b/i, label: "Next.js" },
+  { re: /\bsupabase\b/i, label: "Supabase" },
+  { re: /\btypescript\b|\bts\b/i, label: "TypeScript" },
 ];
 
 export function extractStackMentions(text: string): string[] {
@@ -115,6 +118,15 @@ export function buildAssistantReply(
 
   if (/architecture|diagram|design/i.test(text)) {
     return `Drafting an architecture that maps ${companyName} onto ${stack.length ? stack.join(" + ") : "your environment"}. You'll see channels (chat/email/voice), the FDE runtime, company knowledge, and MCP tools as first-class components.`;
+  }
+
+  if (/integrat|implement|build it|connect.*(repo|codebase)|can you actually/i.test(text)) {
+    const stackLabel = stack.length ? stack.join(" + ") : "your stack";
+    return `Yes. I can integrate this without rewriting your existing authentication architecture.\n\nI'd add one server-side endpoint and one small client/wrapper, following the patterns already in your codebase (${stackLabel}).\n\nWhen you're ready, hit **Start Implementation**. I'll connect to your repository (or a demo repo), analyze the code, propose an exact plan, build on a branch, run checks, repair anything that fails, and prepare a PR for your review — nothing merges without you.`;
+  }
+
+  if (/next\.?js|supabase/i.test(text) && /work with|fit|integrat/i.test(text)) {
+    return `Yes — Next.js and Supabase are a clean fit. I'd attach ${companyName} through your existing server route patterns and leave client auth alone.\n\nI can go further than a design: open **Start Implementation**, connect the repo, and I'll produce a reviewable PR.`;
   }
 
   if (/call|voice|talk/i.test(text) && text.length < 80) {

@@ -664,7 +664,39 @@ export async function mockRespondEscalation(id: string, response: string): Promi
 
 export async function mockResetDemo() {
   await latency(100, 200);
+  const { resetWorkspaces } = await import("./workspace");
+  const { resetAccounts } = await import("./account");
+  resetWorkspaces();
+  resetAccounts();
   return resetStore();
 }
+
+export {
+  mockCreateWorkspace,
+  mockGetWorkspace,
+  mockGetWorkspaceByConversation,
+  mockConnectRepository,
+  mockAnalyzeWorkspace,
+  mockCreatePlan,
+  mockStartBuild,
+  mockGetRun,
+  mockPreparePr,
+  mockFitArchitecture,
+} from "./workspace";
+
+export {
+  mockGetAccountRoom,
+  mockListAccounts,
+  mockConnectSlack,
+  mockGetSlackChannels,
+  mockGetSlackThread,
+  mockAdvanceAccountDemo,
+  mockResolveBlocker,
+  mockGetFieldSignals,
+  mockGetPlaybooks,
+  mockGetFdeDashboard,
+  accountStageLabel,
+  resetAccounts,
+} from "./account";
 
 export { loadStore, resetStore };

@@ -7,14 +7,18 @@ import {
   MessageSquare,
   Bot,
   ExternalLink,
+  Building2,
+  Lightbulb,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/accounts/pr_globex", label: "Accounts", icon: Building2 },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/conversations", label: "Conversations", icon: MessageSquare },
+  { href: "/field-signals", label: "Field Signals", icon: Lightbulb },
   { href: "/agent", label: "Agent", icon: Bot },
 ];
 
@@ -45,7 +49,10 @@ export function Sidebar({
 
       <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
         {nav.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active =
+            item.href.startsWith("/accounts")
+              ? pathname?.startsWith("/accounts")
+              : pathname === item.href || pathname?.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
             <Link

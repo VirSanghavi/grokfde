@@ -37,7 +37,7 @@ export function createSeedStore(): MockStore {
   const memory: ProspectMemory = {
     stage: "technical-evaluation",
     summary: "Evaluating Grok FDE for technical sales automation. Interested in MCP and voice.",
-    currentStack: ["AWS", "Kubernetes"],
+    currentStack: ["AWS", "Kubernetes", "Next.js", "Supabase"],
     painPoints: ["GPU availability", "Infrastructure cost", "SE bandwidth"],
     requirements: ["US data residency", "Burst capacity", "Sandbox creation for prospects"],
     objections: ["Migration complexity"],

@@ -17,12 +17,12 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Demo path (judges)
 
 1. Landing → **Talk to ours** (or `/fde/grok-fde`)
-2. Chat as Globex: *“We use Kubernetes on AWS. Could Grok FDE fit into our workflow?”*
-3. Watch agent activity + memory panel update
-4. Ask: *“What would you recommend given our current stack?”*
-5. Click **Call Atlas** — voice references Kubernetes/AWS
-6. End call → transcript + “Atlas learned…”
-7. Company side: `/dashboard`, `/knowledge`, `/conversations`
+2. Chat → stack + **Start Implementation** → build → PR
+3. **Account Room** `/accounts/pr_globex` — Slack `#globex-grok-fde`, milestones, blockers
+4. Click **Advance demo** repeatedly: staging 401 → root cause → fix PR #143 → security blocker → production
+5. **Field Signals** for cross-account product opportunities
+6. Call Atlas still works for voice continuity
+7. Company: `/dashboard`, `/knowledge`, `/conversations`, `/agent` (Slack connect)
 
 Or start fresh: `/onboarding` → create company → teach FDE → launch.
 

@@ -270,3 +270,357 @@ export interface OnboardingState {
   agentVoice?: string;
   sourcesAdded: number;
 }
+
+/* ─── Implementation workspace (second-pass FDE lifecycle) ─── */
+
+export type WorkspaceStatus =
+  | "discovery"
+  | "connected"
+  | "analyzing"
+  | "analyzed"
+  | "planning"
+  | "planned"
+  | "building"
+  | "ready_for_review"
+  | "failed";
+
+export type ImplementationRunStatus =
+  | "queued"
+  | "analyzing"
+  | "planning"
+  | "building"
+  | "testing"
+  | "repairing"
+  | "ready_for_review"
+  | "failed"
+  | "pr_ready";
+
+export type FileOperation = "create" | "modify" | "delete";
+
+export type ImplementationEventType =
+  | "repository_connected"
+  | "repository_analyzing"
+  | "repository_analyzed"
+  | "implementation_planning"
+  | "implementation_plan_ready"
+  | "implementation_started"
+  | "file_modified"
+  | "test_started"
+  | "test_passed"
+  | "test_failed"
+  | "repair_started"
+  | "repair_completed"
+  | "pr_ready"
+  | string;
+
+export interface ImplementationEvent {
+  type: ImplementationEventType;
+  label: string;
+  at?: string;
+}
+
+export interface WorkspaceRepository {
+  id: string;
+  repositoryName: string;
+  defaultBranch: string;
+  status: "connected" | "error";
+  provider: "demo" | "github";
+}
+
+export interface ImportantFile {
+  path: string;
+  reason: string;
+}
+
+export interface WorkspaceAnalysis {
+  status: "analyzed";
+  stack: string[];
+  architectureSummary: string;
+  importantFiles: ImportantFile[];
+  integrationPoints: string[];
+  risks: string[];
+}
+
+export interface PlanChange {
+  path: string;
+  operation: FileOperation;
+  purpose: string;
+}
+
+export interface ImplementationPlan {
+  planId: string;
+  summary: string;
+  changes: PlanChange[];
+  tests: string[];
+  risks: string[];
+  requiresApproval: boolean;
+  objective?: string;
+}
+
+export interface ImplementationFile {
+  path: string;
+  operation: FileOperation;
+  diff?: string;
+}
+
+export interface ImplementationTest {
+  name: string;
+  status: "passed" | "failed" | "running" | "pending" | string;
+  output?: string;
+}
+
+export interface PullRequestInfo {
+  number?: number;
+  title: string;
+  url: string;
+  branchName: string;
+  status: "ready" | "open" | "merged";
+}
+
+export interface ImplementationRun {
+  id: string;
+  workspaceId: string;
+  status: ImplementationRunStatus;
+  branchName: string;
+  summary?: string;
+  files: ImplementationFile[];
+  tests: ImplementationTest[];
+  events: ImplementationEvent[];
+  pr?: PullRequestInfo;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Workspace {
+  id: string;
+  prospectId: string;
+  conversationId: string;
+  status: WorkspaceStatus;
+  objective: string;
+  repository?: WorkspaceRepository;
+  analysis?: WorkspaceAnalysis;
+  plan?: ImplementationPlan;
+  activeRunId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─── Pass 3: Account Room + Slack lifecycle ─── */
+
+export type AccountStage =
+  | "prospect"
+  | "discovery"
+  | "technical_evaluation"
+  | "proof_of_concept"
+  | "implementation"
+  | "staging"
+  | "production"
+  | "expansion"
+  | "blocked";
+
+export type TimelineItemType =
+  | "chat"
+  | "email"
+  | "call"
+  | "slack"
+  | "implementation"
+  | "deployment"
+  | "decision"
+  | "blocker"
+  | "milestone"
+  | "github"
+  | "system"
+  | string;
+
+export interface SlackConnection {
+  id: string;
+  workspaceName: string;
+  channelId: string;
+  channelName: string;
+  status: "connected" | "error" | "disconnected";
+  botName?: string;
+  participantCount?: number;
+  lastActiveAt?: string;
+  permissions?: string[];
+}
+
+export interface SlackMessage {
+  id: string;
+  author: string;
+  authorRole?: "customer" | "agent" | "vendor" | "system";
+  text: string;
+  createdAt: string;
+}
+
+export interface SlackThread {
+  id: string;
+  channelName: string;
+  root: SlackMessage;
+  replies: SlackMessage[];
+}
+
+export type BlockerOwnerKind = "customer" | "vendor" | "atlas" | "unknown";
+
+export interface AccountBlocker {
+  id: string;
+  title: string;
+  description?: string;
+  owner?: string;
+  ownerKind?: BlockerOwnerKind;
+  source?: string;
+  status: "open" | "resolved";
+  impact?: string;
+  atlasAction?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface AccountDecision {
+  id: string;
+  title: string;
+  decision: string;
+  rationale?: string;
+  source?: string;
+  createdAt: string;
+}
+
+export interface Commitment {
+  id: string;
+  owner: string;
+  description: string;
+  status: "open" | "done";
+  dueLabel?: string;
+}
+
+export interface Milestone {
+  id: string;
+  label: string;
+  status: "completed" | "current" | "upcoming" | "blocked";
+}
+
+export type DeploymentStatus =
+  | "not_started"
+  | "staging"
+  | "validating"
+  | "ready_for_production"
+  | "production"
+  | "degraded"
+  | "rolled_back"
+  | string;
+
+export interface DeploymentCheck {
+  label: string;
+  status: "passed" | "running" | "pending" | "failed" | string;
+}
+
+export interface DeploymentState {
+  environment: string;
+  status: DeploymentStatus;
+  version?: string;
+  checks?: DeploymentCheck[];
+  next?: string;
+  demo?: boolean;
+}
+
+export interface AdoptionMetrics {
+  liveFor?: string;
+  runs?: number;
+  successRate?: number;
+  escalations?: number;
+  customerUsers?: number;
+  recommendation?: string;
+}
+
+export interface QualityMetrics {
+  scenarioPassRate?: number;
+  policyAdherence?: number;
+  toolCorrectness?: number;
+  escalationAccuracy?: number;
+  issues?: number;
+  status?: "PASSING" | "NEEDS ATTENTION" | string;
+}
+
+export interface ProductionIssue {
+  id: string;
+  title: string;
+  environment: string;
+  firstReported?: string;
+  source?: string;
+  status: "investigating" | "root_cause_found" | "fix_ready" | "needs_customer" | "resolved" | string;
+  rootCause?: string;
+  atlasStatus?: string;
+  linkedPr?: string;
+}
+
+export interface ImplementationRequest {
+  id: string;
+  source: string;
+  request: string;
+  status: "open" | "planned" | "building" | "done";
+  createdAt: string;
+}
+
+export interface TimelineItem {
+  id: string;
+  type: TimelineItemType;
+  title: string;
+  summary?: string;
+  createdAt: string;
+  meta?: Record<string, unknown>;
+  threadId?: string;
+}
+
+export interface FieldSignal {
+  id: string;
+  type: string;
+  title: string;
+  accountCount: number;
+  recommendation?: string;
+}
+
+export interface Playbook {
+  id: string;
+  title: string;
+  usedBy: number;
+  includes: string[];
+}
+
+export interface AccountRoom {
+  id: string;
+  prospectId: string;
+  conversationId: string;
+  name: string;
+  stage: AccountStage;
+  successOutcome: string;
+  successCriteria: string[];
+  stack: string[];
+  atlasStatus: string;
+  nextAction: string;
+  nextMilestone?: string;
+  currentImplementation?: string;
+  currentEnvironment?: string;
+  slack?: SlackConnection;
+  milestones: Milestone[];
+  blockers: AccountBlocker[];
+  decisions: AccountDecision[];
+  commitments: Commitment[];
+  deployment?: DeploymentState;
+  adoption?: AdoptionMetrics;
+  quality?: QualityMetrics;
+  issue?: ProductionIssue | null;
+  implementationRequest?: ImplementationRequest | null;
+  timeline: TimelineItem[];
+  updatedAt: string;
+}
+
+export interface FdeDashboardData extends DashboardData {
+  metrics: DashboardData["metrics"] & {
+    activeAccounts?: number;
+    implementations?: number;
+    production?: number;
+    blocked?: number;
+  };
+  blockedAccounts?: { id: string; name: string; blocker: string }[];
+  fieldSignalsPreview?: FieldSignal[];
+  atlasActivity?: { label: string; at: string }[];
+}

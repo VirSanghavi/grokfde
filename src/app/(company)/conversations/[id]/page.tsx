@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { api } from "@/lib/api/client";
 import type { Message, Prospect } from "@/types/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2, Code2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,17 +18,22 @@ export default function ConversationDetailPage() {
   const [prospect, setProspect] = useState<Prospect | null>(null);
   const [agentName, setAgentName] = useState("Atlas");
   const [loading, setLoading] = useState(true);
+  const [implStatus, setImplStatus] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [data, company] = await Promise.all([
+      const [data, company, ws] = await Promise.all([
         api.getConversation(params.id),
         api.getCompany(),
+        api.getWorkspaceByConversation(params.id),
       ]);
       setAgentName(company.agentName);
       if (data) {
         setMessages(data.messages);
         setProspect(data.prospect);
+      }
+      if (ws) {
+        setImplStatus(ws.status);
       }
       setLoading(false);
     })();
@@ -52,11 +57,27 @@ export default function ConversationDetailPage() {
         title={prospect.companyName}
         subtitle="Unified timeline across chat, email, and calls"
         actions={
-          <Link href="/conversations">
-            <Button size="sm" variant="ghost" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
-              Inbox
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {prospect && (
+              <Link href={`/accounts/${prospect.id}`}>
+                <Button size="sm" variant="secondary" leftIcon={<Building2 className="h-3.5 w-3.5" />}>
+                  Account Room
+                </Button>
+              </Link>
+            )}
+            <Link href={`/conversations/${params.id}/workspace`}>
+              <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+                {implStatus && implStatus !== "discovery"
+                  ? "Open Implementation"
+                  : "Start Implementation"}
+              </Button>
+            </Link>
+            <Link href="/conversations">
+              <Button size="sm" variant="ghost" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
+                Inbox
+              </Button>
+            </Link>
+          </div>
         }
       />
       <div className="flex min-h-0 flex-1">
@@ -65,6 +86,23 @@ export default function ConversationDetailPage() {
             {messages.map((m) => (
               <MessageBubble key={m.id} message={m} agentName={agentName} />
             ))}
+            <div className="mx-auto max-w-xl rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-4 shadow-sm">
+              <p className="text-sm font-medium text-fg">
+                {agentName} can move from conversation into implementation
+              </p>
+              <p className="mt-1 text-sm text-fg-muted">
+                Connect their codebase, propose changes, build on a branch, and prepare a PR for
+                review.
+                {implStatus ? ` Current status: ${implStatus.replace(/_/g, " ")}.` : ""}
+              </p>
+              <Link href={`/conversations/${params.id}/workspace`} className="mt-3 inline-flex">
+                <Button size="sm" leftIcon={<Code2 className="h-3.5 w-3.5" />}>
+                  {implStatus && implStatus !== "discovery"
+                    ? "Continue Implementation"
+                    : "Start Implementation"}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
         <div className="hidden w-[300px] shrink-0 lg:block">
