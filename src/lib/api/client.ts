@@ -176,7 +176,18 @@ export const api = {
         recommendation: s.recommendation,
       })),
       atlasActivity: [
-        { label: `${company.agentName} online`, at: new Date().toISOString() },
+        {
+          label: `${company.agentName} online · ${knowledge.length} knowledge sources · ${mcp.reduce((n, s) => n + (s.tools?.length || 0), 0)} MCP tools`,
+          at: new Date().toISOString(),
+        },
+        ...conversations.slice(0, 5).map((c) => ({
+          label: `${c.prospect?.companyName || c.prospect?.personName || "Prospect"} · ${(c.lastChannel || "chat").toUpperCase()} · ${c.lastMessagePreview || "activity"}`,
+          at: c.updatedAt,
+        })),
+        ...openEsc.slice(0, 3).map((e) => ({
+          label: `HITL open · ${String(e.question || "Needs human").slice(0, 80)}`,
+          at: String(e.created_at || e.createdAt || new Date().toISOString()),
+        })),
       ],
     };
     return dash;
