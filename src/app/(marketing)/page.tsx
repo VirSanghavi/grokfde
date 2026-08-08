@@ -48,16 +48,16 @@ export default function LandingPage() {
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
                 <Link
-                  href="/fde/grok-fde"
+                  href="/book/grok-fde"
                   className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-[14px] font-semibold tracking-[-0.01em] text-[#111827] transition-transform duration-150 hover:bg-[#fafafa] active:scale-[0.985]"
                 >
-                  Try the live demo
+                  Book a demo
                 </Link>
                 <Link
-                  href="/onboarding"
+                  href="/fde/grok-fde"
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 bg-transparent px-6 text-[14px] font-medium text-white/92 transition-colors duration-150 hover:border-white/45 hover:bg-white/[0.06]"
                 >
-                  Deploy yours
+                  Talk now
                 </Link>
               </div>
             </div>
@@ -128,16 +128,16 @@ export default function LandingPage() {
 
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Link
-                    href="/fde/grok-fde"
+                    href="/book/grok-fde"
                     className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-semibold text-[#111] transition-transform active:scale-[0.98]"
                   >
-                    Continue in chat
+                    Book a time
                   </Link>
                   <Link
                     href="/fde/grok-fde"
                     className="inline-flex h-10 items-center justify-center rounded-full border border-white/25 px-5 text-[13.5px] font-medium text-white/90 transition-colors hover:bg-white/[0.06]"
                   >
-                    Start video call
+                    Chat now
                   </Link>
                 </div>
               </div>

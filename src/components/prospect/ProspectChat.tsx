@@ -21,6 +21,7 @@ import type {
 import { IconCode, IconMail, IconPanelRight, IconPhone, IconSend, IconSparkles } from "@/components/icons";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function ProspectChat({
@@ -30,6 +31,8 @@ export function ProspectChat({
   companySlug: string;
   prospectId?: string;
 }) {
+  const searchParams = useSearchParams();
+  const autoCall = searchParams.get("call") === "1";
   const [company, setCompany] = useState<Company | null>(null);
   const [prospect, setProspect] = useState<Prospect | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -42,6 +45,7 @@ export function ProspectChat({
   const [showMemory, setShowMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const autoCallFired = useRef(false);
   const { push } = useToast();
 
   const scrollToBottom = useCallback(() => {
@@ -61,6 +65,13 @@ export function ProspectChat({
       }
     })();
   }, [companySlug, prospectId]);
+
+  // Booked demo join: open FaceTime as soon as the session is ready
+  useEffect(() => {
+    if (!autoCall || loading || !conversationId || autoCallFired.current) return;
+    autoCallFired.current = true;
+    setCallOpen(true);
+  }, [autoCall, loading, conversationId]);
 
   useEffect(() => {
     scrollToBottom();

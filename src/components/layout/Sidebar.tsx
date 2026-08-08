@@ -21,6 +21,7 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/dashboard", label: "Operations", icon: IconDashboard },
+  { href: "/demos", label: "Demos", icon: IconDeploy },
   { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },
   { href: "/conversations", label: "Activity", icon: IconActivity },
   { href: "/accounts/pr_globex", label: "Accounts", icon: IconAccounts },
