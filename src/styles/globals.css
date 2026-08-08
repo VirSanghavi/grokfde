@@ -73,17 +73,27 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    height: 100%;
-    overflow: hidden;
   }
 
   body {
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+
+  /* Company ops shell locks the viewport; marketing must scroll */
+  html:has(.app-viewport),
+  body:has(.app-viewport) {
     height: 100%;
     overflow: hidden;
-    min-height: 100dvh;
+  }
+
+  html:has(.marketing-root),
+  body:has(.marketing-root) {
+    height: auto;
+    overflow: auto;
+    background: #000;
   }
 
   ::selection {
