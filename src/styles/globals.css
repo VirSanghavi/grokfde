@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+@theme {
+  /* Light-first canvas */
+  --color-bg: #f3f3f1;
+  --color-bg-elevated: #ffffff;
+  --color-bg-surface: #ffffff;
+  --color-bg-hover: #ecece9;
+  --color-bg-active: #e4e4e0;
+
+  --color-border: #e2e2dd;
+  --color-border-subtle: #ecece8;
+  --color-border-strong: #cfcfc8;
+
+  --color-fg: #141413;
+  --color-fg-secondary: #3d3d38;
+  --color-fg-muted: #6a6a63;
+  --color-fg-faint: #98988f;
+
+  /* Deep ink primary — premium, not neon */
+  --color-accent: #141413;
+  --color-accent-fg: #fafaf8;
+  --color-accent-dim: color-mix(in srgb, #141413 6%, transparent);
+  --color-accent-border: color-mix(in srgb, #141413 14%, transparent);
+
+  /* Functional accents */
+  --color-brand: #0f766e;
+  --color-brand-dim: color-mix(in srgb, #0f766e 10%, transparent);
+  --color-brand-border: color-mix(in srgb, #0f766e 22%, transparent);
+
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-info: #1d4ed8;
+  --color-call: #0e7490;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 1px 2px rgb(20 20 19 / 0.04), 0 1px 1px rgb(20 20 19 / 0.03);
+  --shadow-md: 0 4px 16px rgb(20 20 19 / 0.06), 0 1px 3px rgb(20 20 19 / 0.04);
+  --shadow-lg: 0 20px 40px rgb(20 20 19 / 0.08), 0 4px 12px rgb(20 20 19 / 0.04);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01" on, "cv11" on;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: var(--color-brand-dim);
+    color: var(--color-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  button,
+  select {
+    font: inherit;
+  }
+
+  code,
+  kbd,
+  pre,
+  .font-mono {
+    font-family: var(--font-mono);
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .surface {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .surface-elevated {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .hairline {
+    border: 1px solid var(--color-border);
+  }
+
+  .glow-accent {
+    box-shadow: 0 1px 2px rgb(20 20 19 / 0.08), 0 4px 12px rgb(20 20 19 / 0.08);
+  }
+
+  .page-frame {
+    width: 100%;
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .page-frame {
+      padding-inline: 2rem;
+    }
+  }
+
+  .animate-in {
+    animation: fade-up 0.3s ease-out both;
+  }
+
+  .animate-fade {
+    animation: fade 0.2s ease-out both;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  .wave-bar {
+    animation: wave 1.1s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+
+  .speaking-mouth {
+    animation: speak-mouth 0.35s ease-in-out infinite;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes speak-mouth {
+  0%,
+  100% {
+    transform: scaleX(0.75) scaleY(0.55);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scaleX(1.15) scaleY(1.4);
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
