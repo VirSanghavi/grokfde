@@ -254,3 +254,24 @@ curl -s -X POST $BASE/api/implementation-runs/$RUN_ID/pull-request | jq
 ```bash
 curl -s $BASE/api/workspaces/$WS_ID | jq '{status: .workspace.status, repos: .repositories, plans: [.plans[].id], runs: [.runs[]|{id,status}]}'
 ```
+
+---
+
+# Pass 3 — Account + Slack lifecycle
+
+```bash
+# After company + prospect + workspace exist:
+ACCOUNT=$(curl -s -X POST $BASE/api/accounts -H 'Content-Type: application/json' \
+  -d "{\"prospectId\":\"$PROSPECT_ID\",\"workspaceId\":\"$WS_ID\",\"conversationId\":\"$CONV_ID\"}")
+ACCOUNT_ID=$(echo "$ACCOUNT" | jq -r .account.id)
+
+curl -s -X POST $BASE/api/slack/connect-channel -H 'Content-Type: application/json' \
+  -d "{\"accountId\":\"$ACCOUNT_ID\",\"channelId\":\"C_DEMO\",\"channelName\":\"globex-grok-fde\",\"teamId\":\"T_DEMO\"}" | jq
+
+curl -s -X POST $BASE/api/demo/slack-message -H 'Content-Type: application/json' \
+  -d "{\"accountId\":\"$ACCOUNT_ID\",\"user\":\"Jordan\",\"text\":\"@Atlas staging is returning 401s after the auth change.\"}" | jq
+
+curl -s $BASE/api/accounts/$ACCOUNT_ID/status | jq
+curl -s $BASE/api/accounts/$ACCOUNT_ID/timeline | jq '.events[:8]'
+curl -s $BASE/api/field-signals?companyId=$COMPANY_ID | jq
+```

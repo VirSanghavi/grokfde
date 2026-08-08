@@ -154,7 +154,7 @@ export type ConversationRow = {
 export type MessageRow = {
   id: string;
   conversation_id: string;
-  channel: "chat" | "email" | "call" | "system";
+  channel: "chat" | "email" | "call" | "system" | "slack";
   role: "user" | "assistant" | "system";
   content: string;
   metadata_json: Record<string, unknown>;

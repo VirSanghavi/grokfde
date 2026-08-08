@@ -178,3 +178,26 @@ Merges into prospect memory; writes call + timeline messages.
 `POST /api/implementation-runs/:id/pull-request`
 
 Safe defaults: branch off main, max 8 files, no deletes, protected path denylist, static VALIDATED checks (not claimed as full runtime TESTED unless a sandbox runner is configured).
+
+## Accounts + Slack lifecycle (Pass 3)
+
+`POST /api/accounts` `{ prospectId, workspaceId?, conversationId? }`  
+`GET /api/accounts?companyId=`  
+`GET /api/accounts/:id` — full snapshot  
+`GET /api/accounts/:id/status` — deterministic status + natural text  
+`GET /api/accounts/:id/timeline` — unified cross-channel timeline  
+`GET|POST /api/accounts/:id/deployment`  
+`GET|POST|PATCH /api/accounts/:id/blockers`  
+`GET|POST /api/accounts/:id/decisions`  
+`GET|POST|PATCH /api/accounts/:id/issues`  
+`GET /api/accounts/:id/slack`
+
+`GET /api/slack/install`  
+`GET /api/slack/oauth/callback`  
+`POST /api/slack/connect-channel` `{ accountId, channelId, channelName?, teamId? }`  
+`POST /api/slack/events` — Slack Events API (+ url_verification)
+
+`POST /api/demo/slack-message` — same processor as real Slack (dev/demo)  
+`GET|POST /api/field-signals`
+
+Same FDE identity as chat/voice. Slack replies primarily on @mentions. Tokens never returned in API responses.
