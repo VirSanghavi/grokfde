@@ -36,8 +36,8 @@ export default function LandingPage() {
               Every prospect gets an engineer.
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-fg-muted">
-              Train Grok on your company once. Let every customer talk to a technical engineer
-              instantly across chat, email, voice, and Slack — through implementation and production.
+              Train once on docs, APIs, and MCP tools. Every prospect gets a persistent technical engineer
+              across chat, voice, email, and Slack — through implementation and production.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup">

@@ -16,14 +16,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-brand text-brand-fg hover:bg-brand-strong active:scale-[0.98] shadow-sm disabled:opacity-50",
+    "bg-brand text-brand-fg hover:bg-brand-strong active:scale-[0.99] shadow-sm disabled:opacity-50 transition-premium",
   secondary:
-    "bg-bg-elevated text-fg border border-border shadow-sm hover:bg-bg-hover active:scale-[0.98] disabled:opacity-50",
-  ghost: "bg-transparent text-fg-secondary hover:bg-bg-hover hover:text-fg disabled:opacity-50",
+    "bg-bg-elevated text-fg border border-border shadow-sm hover:bg-bg-hover active:scale-[0.99] disabled:opacity-50 transition-premium",
+  ghost:
+    "bg-transparent text-fg-secondary hover:bg-bg-hover hover:text-fg disabled:opacity-50 transition-premium",
   danger:
-    "bg-danger/10 text-danger border border-danger/20 hover:bg-danger/15 active:scale-[0.98] disabled:opacity-50",
+    "diag-danger hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition-premium",
   outline:
-    "bg-bg-elevated text-fg border border-border-strong hover:bg-bg-hover active:scale-[0.98] disabled:opacity-50",
+    "bg-bg-elevated text-fg border border-border-strong hover:bg-bg-hover active:scale-[0.99] disabled:opacity-50 transition-premium",
 };
 
 const sizes: Record<Size, string> = {

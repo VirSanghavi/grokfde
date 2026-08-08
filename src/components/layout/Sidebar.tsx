@@ -1,25 +1,30 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import {
-  BookOpen,
-  LayoutDashboard,
-  MessageSquare,
-  Bot,
-  ExternalLink,
-  Building2,
-  Lightbulb,
-} from "lucide-react";
+  IconAccounts,
+  IconActivity,
+  IconAgent,
+  IconChart,
+  IconDashboard,
+  IconDeploy,
+  IconKnowledge,
+  IconMcp,
+  IconSettings,
+  IconStatusDot,
+  IconTerminal,
+} from "@/components/icons/DottedIcon";
+import { useWorkspace } from "@/components/layout/WorkspaceContext";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/accounts/pr_globex", label: "Accounts", icon: Building2 },
-  { href: "/knowledge", label: "Knowledge", icon: BookOpen },
-  { href: "/conversations", label: "Conversations", icon: MessageSquare },
-  { href: "/field-signals", label: "Field Signals", icon: Lightbulb },
-  { href: "/agent", label: "Agent", icon: Bot },
+  { href: "/dashboard", label: "Operations", icon: IconDashboard },
+  { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },
+  { href: "/conversations", label: "Activity", icon: IconActivity },
+  { href: "/accounts/pr_globex", label: "Accounts", icon: IconAccounts },
+  { href: "/field-signals", label: "Signals", icon: IconChart },
+  { href: "/agent", label: "Agent", icon: IconAgent },
 ];
 
 export function Sidebar({
@@ -30,62 +35,138 @@ export function Sidebar({
   companyName?: string;
 }) {
   const pathname = usePathname();
+  const { sidebarCollapsed, toggleSidebar, openDrawer, setCommandOpen } = useWorkspace();
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-border bg-bg-elevated">
-      <div className="px-5 pb-4 pt-6">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-brand font-mono text-[10px] font-semibold tracking-wide text-brand-fg">
-            FDE
-          </span>
+    <aside
+      className={cn(
+        "flex h-full shrink-0 flex-col border-r border-border bg-bg-elevated transition-premium",
+        sidebarCollapsed ? "w-[var(--sidebar-collapsed)]" : "w-[var(--sidebar-w)]",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-3 border-b border-border px-3 py-4",
+          sidebarCollapsed && "justify-center px-2",
+        )}
+      >
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-brand transition-premium hover:bg-brand-strong"
+          aria-label="Toggle sidebar"
+        >
+          <span className="font-mono text-[10px] font-semibold text-brand-fg">FDE</span>
+        </button>
+        {!sidebarCollapsed && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-fg">{companyName}</p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
-              Grok FDE
-            </p>
+            <p className="truncate text-sm font-semibold tracking-tight text-fg">{companyName}</p>
+            <p className="mono-ts truncate uppercase tracking-[0.14em]">Grok FDE</p>
           </div>
-        </Link>
+        )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
+      <div className={cn("px-2 pt-3", sidebarCollapsed && "px-1.5")}>
+        <button
+          type="button"
+          onClick={() => setCommandOpen(true)}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-[var(--radius-md)] border border-border bg-bg px-2.5 py-2 text-left transition-premium hover:border-border-strong hover:bg-bg-hover",
+            sidebarCollapsed && "justify-center px-0",
+          )}
+        >
+          <IconTerminal size={16} />
+          {!sidebarCollapsed && (
+            <>
+              <span className="min-w-0 flex-1 truncate text-xs text-fg-muted">Command…</span>
+              <kbd className="mono-ts rounded border border-border bg-bg-elevated px-1">⌘K</kbd>
+            </>
+          )}
+        </button>
+      </div>
+
+      <nav className={cn("flex flex-1 flex-col gap-0.5 px-2 py-3", sidebarCollapsed && "px-1.5")}>
         {nav.map((item) => {
-          const active =
-            item.href.startsWith("/accounts")
-              ? pathname?.startsWith("/accounts")
-              : pathname === item.href || pathname?.startsWith(item.href + "/");
+          const active = item.href.startsWith("/accounts")
+            ? pathname?.startsWith("/accounts")
+            : pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               className={cn(
-                "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium transition-premium",
+                sidebarCollapsed && "justify-center px-0",
                 active
-                  ? "bg-brand-dim text-fg shadow-sm ring-1 ring-brand-border"
-                  : "text-fg-muted hover:bg-bg-hover hover:text-fg"
+                  ? "bg-brand-dim text-fg ring-1 ring-brand-border"
+                  : "text-fg-muted hover:bg-bg-hover hover:text-fg",
               )}
             >
-              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand-strong" : "text-fg-faint")} />
-              {item.label}
+              <Icon size={18} />
+              {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}
+
+        <button
+          type="button"
+          title="MCP Inspector"
+          onClick={() =>
+            openDrawer({
+              title: "MCP State Inspector",
+              subtitle: "Tool inventory · context window",
+              kind: "mcp",
+            })
+          }
+          className={cn(
+            "mt-1 flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg",
+            sidebarCollapsed && "justify-center px-0",
+          )}
+        >
+          <IconMcp size={18} />
+          {!sidebarCollapsed && <span>MCP tools</span>}
+        </button>
+
+        <Link
+          href="/conversations"
+          title="Deployments"
+          className={cn(
+            "flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium text-fg-muted transition-premium hover:bg-bg-hover hover:text-fg",
+            sidebarCollapsed && "justify-center px-0",
+          )}
+        >
+          <IconDeploy size={18} />
+          {!sidebarCollapsed && <span>Deployments</span>}
+        </Link>
       </nav>
 
-      <div className="p-4">
-        <div className="rounded-[var(--radius-lg)] border border-border bg-bg p-3.5">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success" />
-            <span className="text-sm font-medium text-fg">{agentName}</span>
-          </div>
-          <p className="mt-1 text-xs text-fg-muted">Online · ready for prospects</p>
-          <Link
-            href="/fde/grok-fde"
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand transition-colors hover:text-fg"
-          >
-            Open prospect link
-            <ExternalLink className="h-3 w-3" />
-          </Link>
+      <div className={cn("border-t border-border p-3", sidebarCollapsed && "p-2")}>
+        <div
+          className={cn(
+            "rounded-[var(--radius-lg)] border border-border bg-bg p-3",
+            sidebarCollapsed && "flex justify-center p-2",
+          )}
+        >
+          {sidebarCollapsed ? (
+            <IconStatusDot tone="success" />
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <IconStatusDot tone="success" />
+                <span className="text-sm font-medium text-fg">{agentName}</span>
+              </div>
+              <p className="mono-ts mt-1">Online · voice ready</p>
+              <Link
+                href="/fde/grok-fde"
+                className="mt-2.5 flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-bg-elevated px-2.5 py-1.5 text-xs font-medium text-fg-secondary transition-premium hover:bg-bg-hover"
+              >
+                Prospect link
+                <IconSettings size={14} />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </aside>

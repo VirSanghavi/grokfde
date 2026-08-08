@@ -6,11 +6,11 @@ type Tone = "neutral" | "accent" | "success" | "warning" | "danger" | "info" | "
 const tones: Record<Tone, string> = {
   neutral: "bg-bg-hover text-fg-secondary border-border",
   accent: "bg-accent-dim text-fg border-accent-border",
-  success: "bg-success/10 text-success border-success/20",
-  warning: "bg-warning/10 text-warning border-warning/20",
-  danger: "bg-danger/10 text-danger border-danger/20",
-  info: "bg-info/10 text-info border-info/20",
-  call: "bg-call/10 text-call border-call/20",
+  success: "diag-success",
+  warning: "diag-warning",
+  danger: "diag-danger",
+  info: "diag-info",
+  call: "diag-info",
 };
 
 export function Badge({
