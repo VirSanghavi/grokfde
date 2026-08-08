@@ -62,7 +62,13 @@ export default function OnboardingPage() {
     setBusy(true);
     try {
       for (const file of files) {
-        await api.uploadKnowledge({ title: file.name, type: "file" });
+        const content = await file.text().catch(() => "");
+        await api.uploadKnowledge({
+          title: file.name,
+          type: "file",
+          file,
+          content: content || undefined,
+        });
         setSourcesAdded((n) => n + 1);
       }
       setTeachMode(null);

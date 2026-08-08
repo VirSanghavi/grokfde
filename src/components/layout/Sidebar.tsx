@@ -35,7 +35,7 @@ export function Sidebar({
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-border bg-bg-elevated">
       <div className="px-5 pb-4 pt-6">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-accent font-mono text-[10px] font-semibold tracking-wide text-accent-fg">
+          <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-brand font-mono text-[10px] font-semibold tracking-wide text-brand-fg">
             FDE
           </span>
           <div className="min-w-0">
@@ -61,11 +61,11 @@ export function Sidebar({
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-bg-active text-fg shadow-sm"
+                  ? "bg-brand-dim text-fg shadow-sm ring-1 ring-brand-border"
                   : "text-fg-muted hover:bg-bg-hover hover:text-fg"
               )}
             >
-              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-fg" : "text-fg-faint")} />
+              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand-strong" : "text-fg-faint")} />
               {item.label}
             </Link>
           );

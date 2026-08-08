@@ -5,9 +5,9 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: "Grok FDE — Every prospect gets an engineer",
   description:
-    "Train Grok on your company once. Let every customer talk to a technical engineer instantly across chat, email, and voice.",
+    "Train Grok on your company once. Let every customer talk to a technical engineer instantly across chat, email, voice, and Slack.",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23141413'/><text x='16' y='22' text-anchor='middle' font-size='14' font-family='monospace' fill='%23fafaf8'>FDE</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23171717'/><text x='16' y='21' text-anchor='middle' font-size='11' font-weight='600' font-family='system-ui,sans-serif' fill='%23fafafa'>FDE</text></svg>",
   },
 };
 

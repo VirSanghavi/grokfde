@@ -46,5 +46,6 @@ export function slugify(value: string) {
 }
 
 export function isMockMode() {
-  return process.env.NEXT_PUBLIC_MOCK_AI !== "false";
+  // Default to live APIs; set NEXT_PUBLIC_MOCK_AI=true for offline UI demos
+  return process.env.NEXT_PUBLIC_MOCK_AI === "true";
 }

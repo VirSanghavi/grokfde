@@ -8,7 +8,7 @@ export default function LandingPage() {
       <header className="border-b border-border bg-bg-elevated">
         <div className="page-frame flex items-center justify-between py-4">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] bg-accent font-mono text-[10px] font-semibold text-accent-fg">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] bg-brand font-mono text-[10px] font-semibold text-brand-fg">
               FDE
             </span>
             <span className="text-sm font-semibold tracking-tight text-fg">Grok FDE</span>
@@ -37,10 +37,10 @@ export default function LandingPage() {
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-fg-muted">
               Train Grok on your company once. Let every customer talk to a technical engineer
-              instantly across chat, email, and voice.
+              instantly across chat, email, voice, and Slack — through implementation and production.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/onboarding">
+              <Link href="/signup">
                 <Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
                   Create your FDE
                 </Button>
@@ -49,6 +49,9 @@ export default function LandingPage() {
                 <Button size="lg" variant="secondary">
                   Talk to ours
                 </Button>
+              </Link>
+              <Link href="/login" className="text-sm font-medium text-fg-muted hover:text-fg">
+                Sign in
               </Link>
             </div>
           </div>

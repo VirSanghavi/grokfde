@@ -72,9 +72,10 @@ export default function AccountRoomPage() {
     setBusy(true);
     try {
       const next = await api.advanceAccountDemo(room?.prospectId || "pr_globex");
+      if (!next) throw new Error("Account not found");
       setRoom(next);
       push("Account timeline advanced", "success");
-      if (next.issue || next.timeline.some((t) => t.threadId === "thread_401")) {
+      if (next.issue || next.timeline?.some((t) => t.threadId === "thread_401")) {
         const t = await api.getSlackThread("thread_401");
         if (t) setThread(t);
       }

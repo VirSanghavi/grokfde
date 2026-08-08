@@ -10,6 +10,7 @@
 
 # testing
 /coverage
+test-shots/
 
 # next.js
 /.next/
@@ -17,10 +18,15 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+*.key
+credentials*.json
+service-account*.json
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -28,9 +34,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env / secrets — open source: never commit real keys
 .env
-.env*.local
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -39,5 +46,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local e2e artifacts
-test-shots/
+# editor / agent
+.grok/
+.idea/
+.vscode/
+.cursor/
+.claude/
+*.swp
+.turbo/
