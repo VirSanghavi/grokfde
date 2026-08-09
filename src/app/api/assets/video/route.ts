@@ -32,14 +32,16 @@ export async function POST(req: Request) {
       `10-second product explainer: how ${company.name} works for a company using ${memory.currentStack.join(", ") || "modern cloud infrastructure"}. Clean tech aesthetic, architecture morphing from current stack to integrated FDE layer.`;
 
     try {
-      const video = await generateVideo(prompt);
+      // Generation is a job; stay inside maxDuration and report back if it is
+      // still running rather than hanging the request.
+      const video = await generateVideo(prompt, { maxWaitMs: 90_000 });
       const db = getSupabaseAdmin();
       const { data: asset } = await db
         .from("generated_assets")
         .insert({
           conversation_id: conversation.id,
           type: "video",
-          content_json: { url: video.url },
+          content_json: { url: video.url, requestId: video.requestId, status: video.status },
           url: video.url ?? null,
           prompt,
         })
@@ -49,6 +51,8 @@ export async function POST(req: Request) {
       return jsonOk({
         id: asset?.id,
         type: "video",
+        status: video.status,
+        requestId: video.requestId,
         url: video.url,
         prompt,
       });

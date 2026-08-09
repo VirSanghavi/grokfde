@@ -365,6 +365,70 @@ export async function mockEnsureProspectSession(companySlug: string, prospectId?
   };
 }
 
+/**
+ * Internal FDE work thread — a brand new conversation each time, titled by the
+ * prompt that started it. Distinct from mockEnsureProspectSession, which always
+ * resumes the seeded prospect conversation.
+ */
+export async function mockCreateThread(title?: string): Promise<{
+  company: Company;
+  prospect: Prospect;
+  conversation: Conversation;
+  messages: Message[];
+}> {
+  await latency(150, 320);
+  const store = loadStore();
+  const company = store.company;
+  const label = (title || "New thread").trim().slice(0, 80);
+  const at = new Date().toISOString();
+
+  const prospect: Prospect = {
+    id: uid("pr"),
+    companyId: company.id,
+    companyName: label,
+    personName: "You",
+    memory: {
+      stage: "discovery",
+      summary: label,
+      currentStack: [],
+      painPoints: [],
+      requirements: [],
+      objections: [],
+      nextAction: "Work the request",
+    },
+    createdAt: at,
+    updatedAt: at,
+  };
+
+  const conversation: Conversation = {
+    id: uid("cv"),
+    companyId: company.id,
+    prospectId: prospect.id,
+    prospect,
+    lastChannel: "chat",
+    lastMessagePreview: label,
+    createdAt: at,
+    updatedAt: at,
+  };
+
+  const welcome: Message = {
+    id: uid("msg"),
+    conversationId: conversation.id,
+    channel: "chat",
+    role: "assistant",
+    content: `${company.agentName} here — I have your workspace context loaded. Let's work through it.`,
+    createdAt: at,
+  };
+
+  updateStore((s) => {
+    s.prospects.push(prospect);
+    s.conversations.push(conversation);
+    s.messages[conversation.id] = [welcome];
+  });
+
+  return { company, prospect, conversation, messages: [welcome] };
+}
+
 export async function mockSendMessage(conversationId: string, text: string): Promise<ChatMessageResponse> {
   await latency(500, 900);
   const store = loadStore();
@@ -446,16 +510,14 @@ export async function mockSendMessage(conversationId: string, text: string): Pro
   };
 }
 
-/** Default mock face media — swap faceVideoUrl/streamUrl when Person B ships realtime face. */
+/**
+ * Mock face media. Deliberately carries no portrait: the real face is generated
+ * from the configured voice (see /api/assets/agent-face), and mock mode has no
+ * key to generate with. The call stage falls back to the initials avatar — a
+ * bundled stock photo would just re-introduce the voice/face mismatch.
+ */
 function mockCallMedia(agentName: string): CallSession["media"] {
-  return {
-    faceImageUrl: "/agents/atlas-face.jpg",
-    // When backend provides a talking loop or live stream, set:
-    // faceVideoUrl: "https://…/atlas-talk.mp4"
-    // streamUrl: "https://…/realtime.m3u8"
-    // realtimeToken: "…"
-    displayName: agentName,
-  };
+  return { displayName: agentName };
 }
 
 export async function mockStartCall(conversationId: string): Promise<CallSession> {

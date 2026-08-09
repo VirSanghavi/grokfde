@@ -46,6 +46,12 @@ export type VoiceTranscriptLine = {
   text: string;
   at: string;
   final: boolean;
+  /**
+   * Monotonic per speaker, incremented when a new spoken turn starts. Consumers
+   * that key on `id` do not need it; it exists for surfaces that group segments
+   * of one turn into a single bubble.
+   */
+  turnId?: number;
 };
 
 /** A tool the model may call. Executed HERE, in the browser. */
@@ -72,6 +78,16 @@ export type VoiceSessionConfig = {
   toolHandlers?: Record<string, VoiceToolHandler>;
   /** Upsert by `line.id`. Never push blindly, see note 1 above. */
   onTranscript?: (line: VoiceTranscriptLine) => void;
+  /**
+   * The same transcript, flattened for consumers that only want "this speaker,
+   * this text, this turn" and do not track item ids. Fires alongside
+   * `onTranscript`, never instead of it.
+   */
+  onTranscriptDelta?: (
+    speaker: "agent" | "prospect",
+    text: string,
+    turnId?: number,
+  ) => void;
   onSpeakingState?: (state: VoiceSpeakingState) => void;
   onActivity?: (event: VoiceActivityEvent) => void;
   /**
@@ -264,6 +280,8 @@ export class VoiceSession {
 
   /** Agent transcript deltas ARE incremental, so this one accumulates. */
   private agentBuf = "";
+  private agentTurn = 0;
+  private userTurn = 0;
   private agentItemId: string | null = null;
   /** User transcripts are cumulative per item, so these are replaced. */
   private userItemId: string | null = null;
@@ -548,6 +566,9 @@ export class VoiceSession {
         const transcript = String(data.transcript ?? "");
         if (!transcript) return;
         const itemId = String(data.item_id ?? this.userItemId ?? `user_${Date.now()}`);
+        // A new item id means a new spoken turn, not a longer prefix of the
+        // one already on screen.
+        if (itemId !== this.userItemId) this.userTurn += 1;
         this.userItemId = itemId;
         this.cfg.onTranscript?.({
           id: `user_${itemId}`,
@@ -555,12 +576,15 @@ export class VoiceSession {
           text: transcript,
           at: new Date().toISOString(),
           final: type.endsWith(".completed"),
+          turnId: this.userTurn,
         });
+        this.cfg.onTranscriptDelta?.("prospect", transcript, this.userTurn);
         return;
       }
 
       case "response.created":
         this.agentBuf = "";
+        this.agentTurn += 1;
         this.agentItemId = String(data.response_id ?? `resp_${Date.now()}`);
         this.cfg.onSpeakingState?.("thinking");
         return;
@@ -650,7 +674,9 @@ export class VoiceSession {
       text,
       at: new Date().toISOString(),
       final,
+      turnId: this.agentTurn,
     });
+    this.cfg.onTranscriptDelta?.("agent", text, this.agentTurn);
   }
 
   private async runPendingTools() {

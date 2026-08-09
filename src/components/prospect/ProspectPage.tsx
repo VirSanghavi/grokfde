@@ -6,6 +6,7 @@ import { CallStage } from "@/components/prospect/CallStage";
 import { Composer } from "@/components/prospect/Composer";
 import { hasMemoryContent, MemoryPanel } from "@/components/prospect/MemoryPanel";
 import { MessageBubble } from "@/components/prospect/MessageBubble";
+import { Avatar } from "@/components/ui/Avatar";
 import {
   NotPublished,
   PageSkeleton,
@@ -278,13 +279,16 @@ export function ProspectPage({
       <header className="shrink-0 border-b border-rule">
         <div className="flex items-center justify-between gap-4 px-5 py-4 md:px-8 lg:px-12">
           <div className="flex min-w-0 items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/agents/atlas-face.jpg"
-              alt=""
-              aria-hidden
-              className="h-9 w-9 shrink-0 rounded-full object-cover object-top"
-            />
+            {/*
+              Initials, not a photograph. public/agents/atlas-face.jpg is gone:
+              a stock headshot of a man fronting a synthesized voice was the
+              single most dishonest thing on this surface, and the file has been
+              deleted, so pointing at it here rendered a broken image icon in
+              the header. The drawn portrait that does exist is rigged for
+              real-time lip sync and belongs on the call stage, not shrunk to
+              nine pixels of head in a nav bar.
+            */}
+            <Avatar name={company.agentName} size="sm" tone="agent" />
             <div className="min-w-0">
               <p className="truncate text-[0.9375rem] font-semibold tracking-[-0.02em] text-ink">
                 {company.agentName}

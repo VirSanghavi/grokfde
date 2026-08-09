@@ -25,6 +25,13 @@ const PROTECTED_PREFIXES = [
   "/field-signals",
   "/demos",
   "/onboarding",
+  // Added with the routes themselves. A new operator page that is not on this
+  // list answers 200 to a stranger and shows real customer data, which is
+  // exactly how the console was left open once already.
+  "/overview",
+  "/threads",
+  "/meet",
+  "/deployments",
 ];
 
 /**
@@ -99,6 +106,10 @@ const CONSOLE_PREFIXES = [
   "/field-signals",
   "/onboarding",
   "/demos",
+  "/overview",
+  "/threads",
+  "/meet",
+  "/deployments",
   "/login",
   "/signup",
 ];

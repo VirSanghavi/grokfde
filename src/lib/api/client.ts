@@ -22,6 +22,7 @@ import {
 } from "@/lib/api/mappers";
 import type {
   AccountRoom,
+  CallMedia,
   CallSession,
   CallTranscriptLine,
   ChatMessageResponse,
@@ -127,6 +128,32 @@ async function realFetch<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiClientError(msg, { status: res.status, code, details });
   }
   return res.json() as Promise<T>;
+}
+
+/** Shapes the chat payload returned by both the plain and streaming endpoints. */
+function mapChatResponse(
+  conversationId: string,
+  data: Record<string, unknown>,
+): ChatMessageResponse {
+  const msg = (data.message ?? {}) as {
+    id?: string;
+    content?: string;
+    createdAt?: string;
+  };
+  const events = (data.events ?? []) as ChatMessageResponse["events"];
+  return {
+    message: {
+      id: msg.id ?? `msg_${Date.now()}`,
+      conversationId,
+      channel: "chat",
+      role: "assistant",
+      content: msg.content ?? "",
+      createdAt: msg.createdAt ?? new Date().toISOString(),
+      events: events as Message["events"],
+    },
+    prospect: mapMemoryFromChat((data.prospect ?? {}) as Record<string, unknown>),
+    events,
+  };
 }
 
 function requireCompanyId(): string {
@@ -241,7 +268,18 @@ export const api = {
         recommendation: s.recommendation,
       })),
       atlasActivity: [
-        { label: `${company.agentName} online`, at: new Date().toISOString() },
+        {
+          label: `${company.agentName} online · ${knowledge.length} knowledge sources · ${mcp.reduce((n, s) => n + (s.tools?.length || 0), 0)} MCP tools`,
+          at: new Date().toISOString(),
+        },
+        ...conversations.slice(0, 5).map((c) => ({
+          label: `${c.prospect?.companyName || c.prospect?.personName || "Prospect"} · ${(c.lastChannel || "chat").toUpperCase()} · ${c.lastMessagePreview || "activity"}`,
+          at: c.updatedAt,
+        })),
+        ...openEsc.slice(0, 3).map((e) => ({
+          label: `HITL open · ${String(e.question || "Needs human").slice(0, 80)}`,
+          at: String(e.created_at || e.createdAt || new Date().toISOString()),
+        })),
       ],
     };
     return dash;
@@ -342,6 +380,49 @@ export const api = {
       `/api/conversations?companyId=${encodeURIComponent(companyId)}`,
     );
     return (data.conversations || []).map(mapConversation);
+  },
+
+  /** Start an internal FDE work thread (company user ↔ Atlas). */
+  async createThread(input?: { title?: string; companyName?: string }) {
+    if (isMockMode()) {
+      const session = await mock.mockCreateThread(input?.title);
+      // Ask the question straight away so the thread opens on the real exchange.
+      if (input?.title) {
+        await mock.mockSendMessage(session.conversation.id, input.title);
+        const refreshed = await mock.mockGetConversation(session.conversation.id);
+        if (refreshed) {
+          return {
+            company: session.company,
+            conversation: refreshed.conversation,
+            prospect: refreshed.prospect,
+            messages: refreshed.messages,
+          };
+        }
+      }
+      return session;
+    }
+
+    const company = await this.getCompany();
+    const session = await realFetch<{
+      conversation: Record<string, unknown>;
+      prospect: Record<string, unknown>;
+    }>("/api/conversations", {
+      method: "POST",
+      body: JSON.stringify({
+        companyId: company.id,
+        companyName: input?.companyName || "Internal",
+        personName: input?.title || "Team",
+      }),
+    });
+    const conversation = mapConversation(session.conversation);
+    const prospect = mapProspect(session.prospect);
+    let messages: Message[] = [];
+    if (input?.title) {
+      await this.sendMessage(conversation.id, input.title);
+    }
+    const detail = await this.getConversation(conversation.id);
+    if (detail) messages = detail.messages;
+    return { company, conversation, prospect, messages };
   },
 
   async getConversation(id: string) {
@@ -489,6 +570,149 @@ export const api = {
   },
 
   /**
+   * Same turn as sendMessage, but text arrives incrementally.
+   *
+   * `onDelta` fires per chunk with the accumulated text so far. Resolves with
+   * the settled response once the server has persisted the message. Mock mode
+   * has no server to stream from, so it replays the canned reply at a readable
+   * pace rather than pretending nothing streams.
+   */
+  async sendMessageStreaming(
+    conversationId: string,
+    message: string,
+    onDelta: (accumulated: string) => void,
+  ): Promise<ChatMessageResponse> {
+    if (isMockMode()) {
+      const res = await mock.mockSendMessage(conversationId, message);
+      const words = res.message.content.split(/(\s+)/);
+      let acc = "";
+      for (const word of words) {
+        acc += word;
+        onDelta(acc);
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      return res;
+    }
+
+    const companyId = getStoredCompanyId();
+    const res = await fetch(`/api/conversations/${conversationId}/message/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(companyId ? { "X-Company-Id": companyId } : {}),
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok || !res.body) {
+      // Streaming unavailable — fall back so the reply still lands.
+      return this.sendMessage(conversationId, message);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let accumulated = "";
+    let settled: ChatMessageResponse | null = null;
+    let failure: string | null = null;
+    const settledParts: Record<string, unknown> = {};
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop() ?? "";
+
+      for (const raw of frames) {
+        let event = "message";
+        let data = "";
+        for (const line of raw.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) data += line.slice(5).trim();
+        }
+        if (!data) continue;
+
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(data) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+
+        if (event === "delta") {
+          accumulated += String(parsed.text ?? "");
+          onDelta(accumulated);
+        } else if (event === "replace") {
+          // The server discards what it sent and re-sends the whole answer,
+          // which happens when a tool round-trip supersedes the first pass.
+          accumulated = String(parsed.text ?? "");
+          onDelta(accumulated);
+        } else if (event === "message") {
+          // The authoritative persisted turn. `prospect` follows separately on
+          // `memory`, so the settled payload is assembled across both rather
+          // than read off a single frame.
+          Object.assign(settledParts, {
+            message: parsed.message,
+            events: parsed.events ?? settledParts.events,
+          });
+        } else if (event === "memory") {
+          Object.assign(settledParts, {
+            prospect: parsed.prospect,
+            events: parsed.events ?? settledParts.events,
+          });
+        } else if (event === "done") {
+          // `done` carries no payload. Mapping it as though it did produced an
+          // empty assistant message that looked like a successful reply.
+          if (settledParts.message) settled = mapChatResponse(conversationId, settledParts);
+        } else if (event === "error") {
+          failure = String(parsed.message ?? "Chat failed");
+        }
+      }
+    }
+
+    // The stream can close after `message` but before `done`, so settle from
+    // whatever arrived rather than paying for the whole turn a second time.
+    if (!settled && settledParts.message) settled = mapChatResponse(conversationId, settledParts);
+    if (settled) return settled;
+    if (failure) throw new Error(failure);
+    // Stream ended without a settled payload — re-ask rather than lose the turn.
+    return this.sendMessage(conversationId, message);
+  },
+
+  /**
+   * The agent's generated face. Returns an empty result when generation is
+   * unavailable (mock mode, no XAI key, quota) — callers fall back to the
+   * initials avatar rather than a portrait that contradicts the voice.
+   */
+  async getAgentFace(): Promise<{
+    faceImageUrl?: string;
+    faceVideoUrl?: string;
+    idleVideoUrl?: string;
+  }> {
+    if (isMockMode()) return {};
+    const companyId = getStoredCompanyId();
+    if (!companyId) return {};
+    try {
+      const data = await realFetch<{
+        available?: boolean;
+        faceImageUrl?: string;
+        faceVideoUrl?: string;
+        idleVideoUrl?: string;
+      }>(`/api/assets/agent-face?companyId=${encodeURIComponent(companyId)}`);
+      if (!data.available) return {};
+      return {
+        faceImageUrl: data.faceImageUrl,
+        faceVideoUrl: data.faceVideoUrl,
+        idleVideoUrl: data.idleVideoUrl,
+      };
+    } catch {
+      return {};
+    }
+  },
+
+  /**
    * Issues live voice credentials.
    *
    * There is deliberately no simulated fallback. A canned script played as
@@ -541,11 +765,14 @@ export const api = {
       status: "connecting" as const,
       startedAt: new Date().toISOString(),
       transcript: [] as CallTranscriptLine[],
-      liveActivity: [] as Array<{ type: "searching_knowledge"; label: string }>,
+      liveActivity: [
+        { type: "searching_knowledge" as const, label: "Loading company knowledge + tools" },
+      ],
+      // No face here on purpose: generating it takes seconds and must not sit
+      // in front of the call connecting. CallOverlay fetches it alongside.
       media: {
-        faceImageUrl: "/agents/atlas-face.jpg",
         displayName: data.context?.agentName || "Atlas",
-      },
+      } as CallMedia,
       realtimeToken: data.token,
       realtimeUrl:
         data.realtimeUrl ||

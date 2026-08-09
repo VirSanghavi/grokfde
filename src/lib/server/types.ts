@@ -127,6 +127,15 @@ export type CompanyRow = {
   escalation_contact: string | null;
   xai_collection_id: string | null;
   knowledge_summary_json: KnowledgeSummary | Record<string, unknown>;
+  /** Generated agent face, cached per voice. See lib/agent-persona.ts. */
+  agent_face_image_url?: string | null;
+  agent_face_video_url?: string | null;
+  agent_face_video_request_id?: string | null;
+  agent_face_idle_video_url?: string | null;
+  agent_face_idle_request_id?: string | null;
+  agent_face_voice?: string | null;
+  agent_face_prompt_version?: number | null;
+  agent_face_generated_at?: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -26,10 +26,16 @@ export async function GET(req: Request) {
 
     const { conversation, prospect, companyId } =
       await getConversationBundle(conversationId);
-    const company = await getCompanyById(companyId);
     const memory = getProspectMemory(prospect);
-    const recent = await getRecentMessages(conversation.id, 12);
-    const mcpServers = await listEnabledMcpServers(companyId);
+
+    // These four are independent — serialising them added round-trips to every
+    // call connect for no reason.
+    const [company, recent, mcpServers, secret] = await Promise.all([
+      getCompanyById(companyId),
+      getRecentMessages(conversation.id, 12),
+      listEnabledMcpServers(companyId),
+      createVoiceClientSecret(300),
+    ]);
     const mcpConfigs = buildMcpToolConfigs(mcpServers);
 
     const instructions = buildVoiceInstructions({
@@ -43,8 +49,6 @@ export async function GET(req: Request) {
         channel: m.channel,
       })),
     });
-
-    const secret = await createVoiceClientSecret(300);
 
     /*
      * SECURITY BOUNDARY.
@@ -129,14 +133,18 @@ export async function GET(req: Request) {
       session: {
         voice: company.agent_voice || "eve",
         instructions,
+        // Tuned for barge-in — see VoiceSession, which mirrors these defaults.
         turn_detection: {
           type: "server_vad",
-          // Verified against the live API. This page gets opened on a phone in
-          // a startup office, so the threshold is deliberately high: every
-          // false trigger cuts Atlas off mid-sentence.
-          threshold: 0.85,
-          prefix_padding_ms: 333,
-          silence_duration_ms: 500,
+          // Tuned for barge-in: low enough that talking over Atlas cuts it off
+          // immediately, which is what makes the call feel like a conversation
+          // rather than a voicemail. `echoCancellation` on the microphone is
+          // what makes a threshold this sensitive safe; without it the agent's
+          // own voice retriggers detection and it interrupts itself.
+          threshold: 0.4,
+          prefix_padding_ms: 200,
+          silence_duration_ms: 380,
+          interrupt_response: true,
         },
         tools,
         // Audio format and transcription are set by the browser client, which

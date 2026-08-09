@@ -535,6 +535,26 @@
 }
 
 /* ── Motion. Communicates state change, or it does not exist. ─────────── */
+
+/*
+ * animate-pulse-soft was used in nine places — speaking indicators, live
+ * transcript dots, connecting states — but the keyframes were never defined,
+ * so every one of them was a silent no-op. Gentler than Tailwind's
+ * animate-pulse, which dips to 50% and reads as flicker on small dots.
+ */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.8s var(--ease-premium) infinite;
+}
 @keyframes fade-up {
   from {
     opacity: 0;
