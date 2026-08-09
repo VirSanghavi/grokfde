@@ -38,6 +38,7 @@ type Connection = {
   url: string | null;
   defaultBranch: string;
   private: boolean;
+  liveCallTools: boolean;
 };
 
 export function GitHubConnection({ companyId }: { companyId: string }) {
@@ -113,6 +114,30 @@ export function GitHubConnection({ companyId }: { companyId: string }) {
     if (!repos) void loadRepos();
     // The list can be long, so the cursor starts where it is useful.
     window.setTimeout(() => filterRef.current?.focus(), 0);
+  }
+
+  async function setLiveCallTools(next: boolean) {
+    if (!connection) return;
+    setBusy("__live__");
+    setActionError(null);
+    try {
+      const res = await fetch("/api/github/connection", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          companyId,
+          repository: connection.fullName,
+          liveCallTools: next,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error?.message ?? "Could not change that.");
+      setConnection(body.connection as Connection);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not change that.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function connect(fullName: string) {
@@ -252,6 +277,44 @@ export function GitHubConnection({ companyId }: { companyId: string }) {
                 onClick={() => void disconnect()}
               >
                 Disconnect
+              </Button>
+            </div>
+          </div>
+
+          {/*
+            The disclosure has to be here, next to the control, and it has to be
+            specific. Tools invoked on a call execute in the visitor's browser,
+            so a file this agent reads out during a call is a file the visitor
+            can read too. That is fine for a sandbox and not fine for a private
+            production repository, and nobody can weigh that from a label that
+            just says "enable tools".
+          */}
+          <div className="mt-5 border-t border-rule pt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <div className="min-w-0">
+                <p className="text-body font-medium text-ink">
+                  Work on this repository during live calls
+                </p>
+                <p className="mt-1 max-w-[64ch] text-caption">
+                  {connection.liveCallTools
+                    ? "On. On a call the agent reads this repository and can open one pull request, on a branch, for review."
+                    : "Off. The agent can talk about this repository but cannot read it or change it while on a call."}
+                </p>
+                <p className="mt-1.5 max-w-[64ch] text-caption">
+                  Anyone with the prospect link can start a call, and what the agent
+                  reads passes through their browser.
+                  {connection.private
+                    ? " This repository is private, so turning this on shows its contents to whoever is on the call."
+                    : " This repository is public, so its contents are already readable."}
+                </p>
+              </div>
+              <Button
+                size="md"
+                variant="secondary"
+                loading={busy === "__live__"}
+                onClick={() => void setLiveCallTools(!connection.liveCallTools)}
+              >
+                {connection.liveCallTools ? "Turn off" : "Turn on"}
               </Button>
             </div>
           </div>

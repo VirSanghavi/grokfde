@@ -1,5 +1,6 @@
 import { createVoiceClientSecret, voiceModel } from "@/lib/ai/grok";
 import { buildVoiceInstructions } from "@/lib/ai/prompts/fde";
+import { getRepoConnection, repoToolDefinitions } from "@/lib/server/agent-repo-tools";
 import { getCompanyById } from "@/lib/server/company-context";
 import { errorResponse, jsonOk, ApiError } from "@/lib/server/errors";
 import { buildMcpToolConfigs, listEnabledMcpServers } from "@/lib/server/mcp";
@@ -119,6 +120,19 @@ export async function GET(req: Request) {
         additionalProperties: false,
       },
     });
+
+    /*
+     * Repository tools, when the company has connected a repository AND turned
+     * these on. They are `function` tools, so they execute in the browser, which
+     * is why every one of them is a call to POST /api/agent/tools/github rather
+     * than anything holding a credential. The definitions below carry no token
+     * and cannot name a repository: the server resolves that from the
+     * conversation, so a visitor cannot point them somewhere else.
+     */
+    const repoConnection = await getRepoConnection(companyId);
+    if (repoConnection?.liveCallTools) {
+      tools.push(...repoToolDefinitions(repoConnection));
+    }
 
     return jsonOk({
       token: secret.value,

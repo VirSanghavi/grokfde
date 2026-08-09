@@ -4,6 +4,7 @@ import { AtlasStage } from "@/components/prospect/AtlasStage";
 import { normalizeDashes } from "@/components/prospect/MessageBubble";
 import { IconMic, IconMicOff, IconPhoneOff, IconX } from "@/components/icons";
 import { api } from "@/lib/api/client";
+import { repoToolHandlers } from "@/lib/realtime/repo-tools";
 import {
   VoiceSession,
   type VoiceActivityEvent,
@@ -138,6 +139,9 @@ export function CallStage({
               const sent = await api.emailConversation({ conversationId, to });
               return { sent: true, to: sent.to, subject: sent.subject };
             },
+            ...repoToolHandlers(conversationId, (event: VoiceActivityEvent) => {
+              if (!cancelled) upsertActivity(event);
+            }),
           },
           onConnected: () => {
             if (cancelled) return;

@@ -32,6 +32,12 @@ const ConnectSchema = z.object({
   companyId: z.string().uuid(),
   /** "owner/repo". Validated against GitHub before anything is written. */
   repository: z.string().min(3).max(200),
+  /**
+   * Let the agent read this repository and open pull requests DURING a live
+   * call. Off unless asked for, because tool results travel through the
+   * visitor's browser and a live call is answered by anonymous strangers.
+   */
+  liveCallTools: z.boolean().optional(),
 });
 
 type ConnectionRow = {
@@ -50,6 +56,7 @@ function serialize(row: ConnectionRow) {
     url: row.source_url,
     defaultBranch: String(meta.defaultBranch ?? "main"),
     private: Boolean(meta.private),
+    liveCallTools: meta.liveCallTools === true,
     connectedAt: row.created_at,
   };
 }
@@ -145,6 +152,15 @@ export async function POST(req: Request) {
         fullName: repo.fullName,
         defaultBranch: repo.defaultBranch,
         private: repo.private,
+        // Preserved across a reconnect of the SAME repository, and reset to off
+        // whenever the repository changes. Silently carrying an opt-in over to a
+        // different repository would enable live access to something nobody
+        // agreed to expose.
+        liveCallTools:
+          body.liveCallTools ??
+          (existing && (existing.metadata_json ?? {}).fullName === repo.fullName
+            ? (existing.metadata_json ?? {}).liveCallTools === true
+            : false),
       },
     };
 
