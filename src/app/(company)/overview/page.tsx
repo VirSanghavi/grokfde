@@ -10,7 +10,6 @@ import {
   IconStatusDot,
   IconVideo,
 } from "@/components/icons";
-import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api/client";
 import { cn, formatRelativeTime } from "@/lib/utils";
