@@ -22,6 +22,7 @@ import {
 } from "@/lib/api/mappers";
 import type {
   AccountRoom,
+  AgentEvent,
   CallMedia,
   CallSession,
   CallTranscriptLine,
@@ -570,116 +571,169 @@ export const api = {
   },
 
   /**
-   * Same turn as sendMessage, but text arrives incrementally.
+   * Same turn as sendMessage, but the answer arrives incrementally.
    *
-   * `onDelta` fires per chunk with the accumulated text so far. Resolves with
-   * the settled response once the server has persisted the message. Mock mode
-   * has no server to stream from, so it replays the canned reply at a readable
-   * pace rather than pretending nothing streams.
+   * Mirrors the server contract in `/api/conversations/[id]/message/stream`:
+   * `delta` appends, `replace` discards and restarts, `message` carries the
+   * authoritative persisted text, `memory` the updated prospect. The persisted
+   * message wins over accumulated deltas — a turn aborted mid-stream is saved
+   * flagged partial, and the client must show what was actually stored.
+   *
+   * Mock mode has no server to stream from, so it replays the canned reply at
+   * a readable pace rather than pretending nothing streams.
    */
   async sendMessageStreaming(
     conversationId: string,
     message: string,
-    onDelta: (accumulated: string) => void,
+    handlers: {
+      onDelta?: (accumulated: string) => void;
+      onActivity?: (event: AgentEvent) => void;
+      onReasoning?: (text: string) => void;
+    } = {},
   ): Promise<ChatMessageResponse> {
+    const { onDelta, onActivity, onReasoning } = handlers;
+
     if (isMockMode()) {
       const res = await mock.mockSendMessage(conversationId, message);
+      for (const event of res.events ?? []) onActivity?.(event);
       const words = res.message.content.split(/(\s+)/);
       let acc = "";
       for (const word of words) {
         acc += word;
-        onDelta(acc);
+        onDelta?.(acc);
         await new Promise((r) => setTimeout(r, 12));
       }
       return res;
     }
 
     const companyId = getStoredCompanyId();
-    const res = await fetch(`/api/conversations/${conversationId}/message/stream`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(companyId ? { "X-Company-Id": companyId } : {}),
-      },
-      body: JSON.stringify({ message }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`/api/conversations/${conversationId}/message/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(companyId ? { "X-Company-Id": companyId } : {}),
+        },
+        body: JSON.stringify({ message }),
+      });
+    } catch (cause) {
+      throw new NetworkError(cause);
+    }
 
+    // Never silently retry a send here: the turn may already have been
+    // persisted server-side, and re-posting would duplicate the message.
     if (!res.ok || !res.body) {
-      // Streaming unavailable — fall back so the reply still lands.
-      return this.sendMessage(conversationId, message);
+      const body = await res.text().catch(() => "");
+      throw new ApiClientError(body || `Stream failed: ${res.status}`, {
+        status: res.status,
+      });
     }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let accumulated = "";
-    let settled: ChatMessageResponse | null = null;
-    let failure: string | null = null;
-    const settledParts: Record<string, unknown> = {};
+    let settledMessage: ChatMessageResponse["message"] | null = null;
+    let settledEvents: AgentEvent[] = [];
+    let settledMemory: ChatMessageResponse["prospect"] | null = null;
+    let failure: { message: string; status: number } | null = null;
 
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
+      // Frames are separated by a blank line; keep any partial tail.
       const frames = buffer.split("\n\n");
       buffer = frames.pop() ?? "";
 
       for (const raw of frames) {
-        let event = "message";
         let data = "";
         for (const line of raw.split("\n")) {
-          if (line.startsWith("event:")) event = line.slice(6).trim();
-          else if (line.startsWith("data:")) data += line.slice(5).trim();
+          // ":" lines are keep-alive comments, and the event name is already
+          // carried inside the JSON payload as `type`.
+          if (line.startsWith("data:")) data += line.slice(5).trim();
         }
         if (!data) continue;
 
-        let parsed: Record<string, unknown>;
+        let evt: Record<string, unknown>;
         try {
-          parsed = JSON.parse(data) as Record<string, unknown>;
+          evt = JSON.parse(data) as Record<string, unknown>;
         } catch {
           continue;
         }
 
-        if (event === "delta") {
-          accumulated += String(parsed.text ?? "");
-          onDelta(accumulated);
-        } else if (event === "replace") {
-          // The server discards what it sent and re-sends the whole answer,
-          // which happens when a tool round-trip supersedes the first pass.
-          accumulated = String(parsed.text ?? "");
-          onDelta(accumulated);
-        } else if (event === "message") {
-          // The authoritative persisted turn. `prospect` follows separately on
-          // `memory`, so the settled payload is assembled across both rather
-          // than read off a single frame.
-          Object.assign(settledParts, {
-            message: parsed.message,
-            events: parsed.events ?? settledParts.events,
-          });
-        } else if (event === "memory") {
-          Object.assign(settledParts, {
-            prospect: parsed.prospect,
-            events: parsed.events ?? settledParts.events,
-          });
-        } else if (event === "done") {
-          // `done` carries no payload. Mapping it as though it did produced an
-          // empty assistant message that looked like a successful reply.
-          if (settledParts.message) settled = mapChatResponse(conversationId, settledParts);
-        } else if (event === "error") {
-          failure = String(parsed.message ?? "Chat failed");
+        switch (String(evt.type)) {
+          case "delta":
+            accumulated += String(evt.text ?? "");
+            onDelta?.(accumulated);
+            break;
+          case "replace":
+            accumulated = String(evt.text ?? "");
+            onDelta?.(accumulated);
+            break;
+          case "activity":
+            if (evt.event) onActivity?.(evt.event as AgentEvent);
+            break;
+          case "reasoning":
+            onReasoning?.(String(evt.text ?? ""));
+            break;
+          case "message": {
+            const m = evt.message as {
+              id?: string;
+              content?: string;
+              createdAt?: string;
+            };
+            settledEvents = (evt.events as AgentEvent[]) ?? [];
+            settledMessage = {
+              id: m?.id ?? `msg_${Date.now()}`,
+              conversationId,
+              channel: "chat",
+              role: "assistant",
+              content: m?.content ?? accumulated,
+              createdAt: m?.createdAt ?? new Date().toISOString(),
+              events: settledEvents as Message["events"],
+            };
+            break;
+          }
+          case "memory":
+            settledMemory = evt.prospect as ChatMessageResponse["prospect"];
+            if (Array.isArray(evt.events)) settledEvents = evt.events as AgentEvent[];
+            break;
+          case "error":
+            failure = {
+              message: String(evt.message ?? "Chat failed"),
+              status: 502,
+            };
+            break;
+          default:
+            break;
         }
       }
     }
 
-    // The stream can close after `message` but before `done`, so settle from
-    // whatever arrived rather than paying for the whole turn a second time.
-    if (!settled && settledParts.message) settled = mapChatResponse(conversationId, settledParts);
-    if (settled) return settled;
-    if (failure) throw new Error(failure);
-    // Stream ended without a settled payload — re-ask rather than lose the turn.
-    return this.sendMessage(conversationId, message);
+    if (failure && !settledMessage) {
+      throw new ApiClientError(failure.message, { status: failure.status });
+    }
+
+    if (!settledMessage) {
+      // The stream ended without persisting. Surface it rather than re-posting.
+      throw new ApiClientError(
+        accumulated
+          ? "The reply was cut off before it was saved."
+          : "The reply stream ended before anything arrived.",
+        { status: 502 },
+      );
+    }
+
+    return {
+      message: settledMessage,
+      prospect: settledMemory ?? ({} as ChatMessageResponse["prospect"]),
+      events: settledEvents as ChatMessageResponse["events"],
+    };
   },
+
 
   /**
    * The agent's generated face. Returns an empty result when generation is
