@@ -9,9 +9,12 @@ import {
   IconDeploy,
   IconKnowledge,
   IconMcp,
+  IconMessage,
   IconSearch,
   IconSettings,
+  IconSparkles,
   IconTerminal,
+  IconVideo,
 } from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
 import { cn } from "@/lib/utils";
@@ -43,6 +46,30 @@ export function CommandPalette() {
 
   const items = useMemo<CommandItem[]>(() => {
     const nav: CommandItem[] = [
+      {
+        id: "overview",
+        label: "Overview",
+        hint: "What should we tackle today?",
+        group: "Navigate",
+        icon: IconSparkles,
+        action: () => router.push("/overview"),
+      },
+      {
+        id: "threads",
+        label: "Threads",
+        hint: "All chats with Atlas",
+        group: "Navigate",
+        icon: IconMessage,
+        action: () => router.push("/threads"),
+      },
+      {
+        id: "meet",
+        label: "Start a meet",
+        hint: "Video with Atlas or teammate",
+        group: "Navigate",
+        icon: IconVideo,
+        action: () => router.push("/meet"),
+      },
       {
         id: "dash",
         label: "Open Operations Center",

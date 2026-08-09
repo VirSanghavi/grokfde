@@ -9,9 +9,12 @@ import {
   IconDeploy,
   IconKnowledge,
   IconMcp,
+  IconMessage,
   IconSettings,
+  IconSparkles,
   IconStatusDot,
   IconTerminal,
+  IconVideo,
   LogoMark,
 } from "@/components/icons";
 import { useWorkspace } from "@/components/layout/WorkspaceContext";
@@ -20,6 +23,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const nav = [
+  { href: "/overview", label: "Overview", icon: IconSparkles },
+  { href: "/threads", label: "Threads", icon: IconMessage },
+  { href: "/meet", label: "Meet", icon: IconVideo },
   { href: "/dashboard", label: "Operations", icon: IconDashboard },
   { href: "/demos", label: "Demos", icon: IconDeploy },
   { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },

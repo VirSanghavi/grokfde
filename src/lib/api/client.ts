@@ -290,6 +290,68 @@ export const api = {
     return (data.conversations || []).map(mapConversation);
   },
 
+  /** Start an internal FDE work thread (company user ↔ Atlas). */
+  async createThread(input?: { title?: string; companyName?: string }) {
+    if (isMockMode()) {
+      const company = await mock.mockGetCompany();
+      const session = await mock.mockEnsureProspectSession(
+        company.slug,
+        undefined,
+      );
+      // Tag preview with title when provided
+      if (input?.title) {
+        await mock.mockSendMessage(
+          session.conversation.id,
+          input.title.startsWith("Thread:")
+            ? input.title
+            : `Let's work on: ${input.title}`,
+        );
+        const refreshed = await mock.mockGetConversation(session.conversation.id);
+        if (refreshed) {
+          return {
+            company,
+            conversation: refreshed.conversation,
+            prospect: refreshed.prospect,
+            messages: refreshed.messages,
+          };
+        }
+      }
+      return {
+        company,
+        conversation: session.conversation,
+        prospect: session.prospect,
+        messages: session.messages,
+      };
+    }
+
+    const company = await this.getCompany();
+    const session = await realFetch<{
+      conversation: Record<string, unknown>;
+      prospect: Record<string, unknown>;
+    }>("/api/conversations", {
+      method: "POST",
+      body: JSON.stringify({
+        companyId: company.id,
+        companyName: input?.companyName || "Internal",
+        personName: input?.title || "Team",
+      }),
+    });
+    const conversation = mapConversation(session.conversation);
+    const prospect = mapProspect(session.prospect);
+    let messages: Message[] = [];
+    if (input?.title) {
+      await this.sendMessage(
+        conversation.id,
+        input.title.startsWith("Thread:")
+          ? input.title
+          : `Let's work on: ${input.title}`,
+      );
+    }
+    const detail = await this.getConversation(conversation.id);
+    if (detail) messages = detail.messages;
+    return { company, conversation, prospect, messages };
+  },
+
   async getConversation(id: string) {
     if (isMockMode()) return mock.mockGetConversation(id);
     const data = await realFetch<{
