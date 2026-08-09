@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/mappers";
 import type {
   AccountRoom,
+  CallMedia,
   CallSession,
   CallTranscriptLine,
   ChatMessageResponse,
@@ -483,9 +484,6 @@ export const api = {
       body: JSON.stringify({ conversationId }),
     });
 
-    // Face is generated from the configured voice — never a bundled stock photo.
-    const face = await this.getAgentFace();
-
     return {
       id: `call_${Date.now()}`,
       conversationId,
@@ -495,11 +493,11 @@ export const api = {
       liveActivity: [
         { type: "searching_knowledge" as const, label: "Loading company knowledge + tools" },
       ],
+      // No face here on purpose: generating it takes seconds and must not sit
+      // in front of the call connecting. CallOverlay fetches it alongside.
       media: {
-        faceImageUrl: face.faceImageUrl,
-        faceVideoUrl: face.faceVideoUrl,
         displayName: data.context?.agentName || "Atlas",
-      },
+      } as CallMedia,
       realtimeToken: data.token,
       realtimeUrl:
         data.realtimeUrl ||

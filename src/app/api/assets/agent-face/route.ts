@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  FACE_PROMPT_VERSION,
   facePortraitPrompt,
   faceVideoPrompt,
   personaForVoice,
@@ -27,6 +28,7 @@ type FaceUpdate = Partial<
     | "agent_face_video_url"
     | "agent_face_video_request_id"
     | "agent_face_voice"
+    | "agent_face_prompt_version"
     | "agent_face_generated_at"
   >
 >;
@@ -63,18 +65,25 @@ export async function GET(req: Request) {
     const company = await getCompanyById(companyId);
     const persona = personaForVoice(company.agent_voice);
     const agentName = company.agent_name || "Atlas";
-    const staleVoice = company.agent_face_voice !== persona.voice;
+    // Either a different voice or newer framing means the cached media is wrong.
+    const stale =
+      refresh ||
+      company.agent_face_voice !== persona.voice ||
+      (company.agent_face_prompt_version ?? 0) !== FACE_PROMPT_VERSION;
 
-    let faceImageUrl = refresh || staleVoice ? undefined : company.agent_face_image_url ?? undefined;
-    let faceVideoUrl = refresh || staleVoice ? undefined : company.agent_face_video_url ?? undefined;
-    let videoRequestId =
-      refresh || staleVoice ? undefined : company.agent_face_video_request_id ?? undefined;
+    let faceImageUrl = stale ? undefined : company.agent_face_image_url ?? undefined;
+    let faceVideoUrl = stale ? undefined : company.agent_face_video_url ?? undefined;
+    let videoRequestId = stale ? undefined : company.agent_face_video_request_id ?? undefined;
     let videoStatus: "none" | "pending" | "ready" | "failed" = faceVideoUrl ? "ready" : "none";
 
     // 1. Portrait — inline, fast.
     if (!faceImageUrl) {
       try {
-        const image = await generateImage(facePortraitPrompt(persona, agentName));
+        const image = await generateImage(facePortraitPrompt(persona, agentName), {
+          // Match the 16:9 call stage so the head is never cropped to fit.
+          aspectRatio: "16:9",
+          resolution: "720p",
+        });
         faceImageUrl =
           image.url ?? (image.b64 ? `data:image/png;base64,${image.b64}` : undefined);
       } catch (err) {
@@ -96,6 +105,7 @@ export async function GET(req: Request) {
         agent_face_video_url: null,
         agent_face_video_request_id: null,
         agent_face_voice: persona.voice,
+        agent_face_prompt_version: FACE_PROMPT_VERSION,
         agent_face_generated_at: new Date().toISOString(),
       });
       videoRequestId = undefined;

@@ -107,7 +107,10 @@ export function CallVideoStage({
       <video
         ref={videoRef}
         className={cn(
-          "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+          // Live camera streams fill; generated clips are contained so the
+          // subject stays whole if the aspect ratio does not match the tile.
+          "absolute inset-0 h-full w-full transition-opacity duration-300",
+          attachStream ? "object-cover" : "object-contain",
           showVideo ? "opacity-100" : "opacity-0"
         )}
         playsInline
@@ -117,16 +120,16 @@ export function CallVideoStage({
         onError={() => setVideoFailed(true)}
       />
 
-      {/* Still face */}
+      {/* Still face — contain, never cover: a portrait-shaped asset in this
+          16:9 tile would otherwise be cropped to a band across the eyes. */}
       {showImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={faceImage}
           alt={agentName}
           className={cn(
-            "absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700",
-            isSpeaking && "scale-[1.02]",
-            status === "connecting" && "scale-105 opacity-80"
+            "absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-700",
+            status === "connecting" && "opacity-80"
           )}
           onError={() => setImageFailed(true)}
         />
@@ -217,12 +220,6 @@ export function CallVideoStage({
         )}
       </div>
 
-      {/* Speaking lip-sync proxy when only still image (no video track yet) */}
-      {showImage && isSpeaking && (
-        <div className="pointer-events-none absolute inset-x-0 top-[58%] flex justify-center">
-          <div className="speaking-mouth h-2 w-8 rounded-full bg-black/25 blur-[1px]" />
-        </div>
-      )}
     </div>
   );
 }

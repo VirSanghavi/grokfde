@@ -2,6 +2,7 @@
 
 import { AgentActivity } from "@/components/prospect/AgentActivity";
 import { CallVideoStage } from "@/components/prospect/CallVideoStage";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { api } from "@/lib/api/client";
@@ -101,17 +102,32 @@ export function CallOverlay({
 
     let cancelled = false;
 
+    // Face generation is slow and entirely optional — resolve it beside the
+    // connection, never in front of it, and merge it in whenever it lands.
+    if (!faceImageUrl) {
+      void api
+        .getAgentFace()
+        .then((face) => {
+          if (cancelled || !face.faceImageUrl) return;
+          setMedia((prev) => ({ ...prev, ...face }));
+        })
+        .catch(() => undefined);
+    }
+
     (async () => {
       try {
         const session = await api.startCall(conversationId);
         if (cancelled) return;
 
         setCallId(session.id);
-        setMedia({
+        // Merge — the generated face may already have landed ahead of this.
+        setMedia((prev) => ({
+          ...prev,
           ...session.media,
-          faceImageUrl: faceImageUrl || session.media?.faceImageUrl,
+          faceImageUrl: faceImageUrl || session.media?.faceImageUrl || prev?.faceImageUrl,
+          faceVideoUrl: session.media?.faceVideoUrl || prev?.faceVideoUrl,
           displayName: session.media?.displayName || agentName,
-        });
+        }));
         setIsMockVoice(Boolean(session.mock));
 
         const voice = new VoiceSession({
@@ -258,32 +274,57 @@ export function CallOverlay({
     <div className="fixed inset-0 z-50 flex flex-col bg-bg text-fg">
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-bg-elevated px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold tracking-[-0.02em] text-fg">
-            {agentName}
-          </p>
-          <p className="mt-0.5 flex items-center gap-2 text-[12px] text-fg-muted">
-            <span className="tabular-nums font-medium text-fg-secondary">
-              {formatDuration(seconds)}
-            </span>
-            <span className="text-fg-faint">·</span>
-            <span>
-              {status === "connecting" && "Connecting…"}
-              {status === "connected" && (isMockVoice ? "Live demo call" : "Live · context loaded")}
-              {status === "ending" && "Saving memory…"}
-              {status === "ended" && "Call ended"}
-            </span>
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar name={agentName} size="sm" />
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold tracking-[-0.02em] text-fg">
+              {agentName}
+            </p>
+            <p className="mt-0.5 truncate text-[12px] text-fg-muted">
+              Forward-Deployed Engineer
+            </p>
+          </div>
+          <span
+            className={cn(
+              "ml-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+              status === "connected" && "border-success/25 bg-success-dim text-success",
+              status === "connecting" && "border-border bg-bg text-fg-muted",
+              status === "ending" && "border-warning/25 bg-warning-dim text-warning",
+              status === "ended" && "border-border bg-bg text-fg-muted",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-block h-1.5 w-1.5 rounded-full",
+                status === "connected" && "bg-success",
+                status === "connecting" && "animate-pulse-soft bg-fg-faint",
+                status === "ending" && "bg-warning",
+                status === "ended" && "bg-fg-faint",
+              )}
+            />
+            {status === "connecting" && "Connecting…"}
+            {status === "connected" && (isMockVoice ? "Demo call" : "Live")}
+            {status === "ending" && "Saving memory…"}
+            {status === "ended" && "Ended"}
+          </span>
+          <span className="mono-ts shrink-0 tabular-nums text-fg-secondary">
+            {formatDuration(seconds)}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <IconButton
-            label={showTranscript ? "Hide transcript" : "Show transcript"}
-            variant="solid"
-            className="border border-border bg-bg-elevated text-fg-secondary hover:bg-bg-hover"
+          <button
+            type="button"
             onClick={() => setShowTranscript((v) => !v)}
+            className={cn(
+              "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-premium",
+              showTranscript
+                ? "border-border-strong bg-bg-hover text-fg"
+                : "border-border bg-bg-elevated text-fg-muted hover:bg-bg-hover hover:text-fg",
+            )}
           >
             <IconSubtitles className="h-4 w-4" />
-          </IconButton>
+            Transcript
+          </button>
           {status === "ended" ? (
             <IconButton
               label="Close"
@@ -360,13 +401,23 @@ export function CallOverlay({
                 Transcript
               </p>
               {transcript.length === 0 && status !== "ended" ? (
-                <p className="text-[13.5px] text-fg-muted">
-                  Speak naturally. {agentName} has your chat memory and company tools.
-                </p>
+                <div className="rounded-xl border border-dashed border-border px-3 py-4 text-center">
+                  <p className="text-[13.5px] font-medium text-fg">Listening…</p>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-fg-muted">
+                    Just start talking. {agentName} already has this thread&rsquo;s memory and your
+                    company tools.
+                  </p>
+                </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {transcript.map((line) => (
-                    <div key={line.id}>
+                    <div
+                      key={line.id}
+                      className={cn(
+                        "rounded-xl px-3 py-2",
+                        line.speaker === "agent" ? "bg-bg" : "bg-brand-dim",
+                      )}
+                    >
                       <p
                         className={cn(
                           "text-[11px] font-medium tracking-[-0.01em]",
@@ -384,30 +435,42 @@ export function CallOverlay({
                     status === "connected" &&
                     speakingState === "speaking" &&
                     transcript[transcript.length - 1]?.text !== caption && (
-                      <div>
+                      <div className="rounded-xl bg-bg px-3 py-2 opacity-70">
                         <p className="text-[11px] font-medium text-call">{agentName}</p>
                         <p className="mt-0.5 text-[13.5px] leading-relaxed text-fg-muted">
                           {caption}
                         </p>
                       </div>
                     )}
+
+                  {/* Sits in the scroll flow, not pinned to the bottom of an
+                      otherwise empty column. */}
+                  {status === "ended" && learned.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-brand-border bg-brand-dim px-3 py-3">
+                      <p className="mb-1.5 text-[11px] font-medium text-fg">
+                        {agentName} learned
+                      </p>
+                      <ul className="space-y-1">
+                        {learned.map((item) => (
+                          <li key={item} className="text-[13px] leading-relaxed text-fg-secondary">
+                            · {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div ref={transcriptEndRef} />
                 </div>
               )}
             </div>
 
-            {status === "ended" && learned.length > 0 && (
-              <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-[11px] font-medium text-fg-muted">
-                  {agentName} learned
+            {status === "ended" && (
+              <div className="shrink-0 border-t border-border px-4 py-3">
+                <p className="mono-ts uppercase tracking-[0.14em]">Call summary</p>
+                <p className="mt-1 text-[13px] text-fg-secondary">
+                  {formatDuration(seconds)} · {transcript.length}{" "}
+                  {transcript.length === 1 ? "line" : "lines"} · saved to the thread
                 </p>
-                <ul className="space-y-1">
-                  {learned.map((item) => (
-                    <li key={item} className="text-[13px] text-fg-secondary">
-                      · {item}
-                    </li>
-                  ))}
-                </ul>
               </div>
             )}
           </aside>
@@ -419,34 +482,36 @@ export function CallOverlay({
         <div className="mx-auto flex max-w-lg items-center justify-center gap-3">
           {status !== "ended" ? (
             <>
-              <IconButton
-                label={muted ? "Unmute" : "Mute"}
-                variant="solid"
-                size="lg"
-                className={cn(
-                  "border border-border",
-                  muted
-                    ? "bg-fg text-accent-fg hover:bg-fg-secondary"
-                    : "bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
-                )}
+              {/* Labelled: the dotted icon set is deliberately low-contrast, so
+                  icon-only controls make muted-vs-live ambiguous mid-call. */}
+              <button
+                type="button"
+                aria-pressed={muted}
                 onClick={() => setMuted((m) => !m)}
+                className={cn(
+                  "flex h-12 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-premium",
+                  muted
+                    ? "border-danger/30 bg-danger-dim text-danger"
+                    : "border-border bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
+                )}
               >
                 {muted ? <IconMicOff className="h-5 w-5" /> : <IconMic className="h-5 w-5" />}
-              </IconButton>
-              <IconButton
-                label={camOff ? "Camera on" : "Camera off"}
-                variant="solid"
-                size="lg"
-                className={cn(
-                  "border border-border",
-                  camOff
-                    ? "bg-fg text-accent-fg hover:bg-fg-secondary"
-                    : "bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
-                )}
+                {muted ? "Muted" : "Mic on"}
+              </button>
+              <button
+                type="button"
+                aria-pressed={camOff}
                 onClick={() => setCamOff((c) => !c)}
+                className={cn(
+                  "flex h-12 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-premium",
+                  camOff
+                    ? "border-danger/30 bg-danger-dim text-danger"
+                    : "border-border bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
+                )}
               >
                 {camOff ? <IconVideoOff className="h-5 w-5" /> : <IconVideo className="h-5 w-5" />}
-              </IconButton>
+                {camOff ? "Camera off" : "Camera on"}
+              </button>
               {/* Plain button: `cn` only joins classes, so a Button variant's
                   bg-transparent would win over an override here. */}
               <button

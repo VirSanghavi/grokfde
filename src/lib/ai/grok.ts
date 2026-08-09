@@ -582,8 +582,14 @@ export async function createVoiceClientSecret(expiresSeconds = 300): Promise<{
 
 // ─── Imagine ───────────────────────────────────────────────────────
 
+export type ImageOptions = {
+  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
+  resolution?: "480p" | "720p" | "1080p";
+};
+
 export async function generateImage(
   prompt: string,
+  opts: ImageOptions = {},
 ): Promise<{ url?: string; b64?: string; raw: unknown }> {
   // Try OpenAI-compatible images endpoint first
   const res = await xaiFetch("/images/generations", {
@@ -594,6 +600,8 @@ export async function generateImage(
       prompt,
       n: 1,
       response_format: "url",
+      ...(opts.aspectRatio ? { aspect_ratio: opts.aspectRatio } : {}),
+      ...(opts.resolution ? { resolution: opts.resolution } : {}),
     }),
   });
 

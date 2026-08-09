@@ -26,10 +26,16 @@ export async function GET(req: Request) {
 
     const { conversation, prospect, companyId } =
       await getConversationBundle(conversationId);
-    const company = await getCompanyById(companyId);
     const memory = getProspectMemory(prospect);
-    const recent = await getRecentMessages(conversation.id, 12);
-    const mcpServers = await listEnabledMcpServers(companyId);
+
+    // These four are independent — serialising them added round-trips to every
+    // call connect for no reason.
+    const [company, recent, mcpServers, secret] = await Promise.all([
+      getCompanyById(companyId),
+      getRecentMessages(conversation.id, 12),
+      listEnabledMcpServers(companyId),
+      createVoiceClientSecret(300),
+    ]);
     const mcpConfigs = buildMcpToolConfigs(mcpServers);
 
     const instructions = buildVoiceInstructions({
@@ -43,8 +49,6 @@ export async function GET(req: Request) {
         channel: m.channel,
       })),
     });
-
-    const secret = await createVoiceClientSecret(300);
 
     const tools: Array<Record<string, unknown>> = [];
     if (company.xai_collection_id && !company.xai_collection_id.startsWith("local_")) {

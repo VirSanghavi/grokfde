@@ -132,6 +132,7 @@ export type CompanyRow = {
   agent_face_video_url?: string | null;
   agent_face_video_request_id?: string | null;
   agent_face_voice?: string | null;
+  agent_face_prompt_version?: number | null;
   agent_face_generated_at?: string | null;
   created_at: string;
   updated_at: string;
