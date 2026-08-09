@@ -58,12 +58,18 @@ const PROTECTED_API_PREFIXES = [
   "/api/assets",
   // Operator-only, and the most sensitive of the set. These act as the connected
   // GitHub account: /api/github/repos returns every repository that account can
-  // see, private ones included (43 repos, 31 private, when a token is present).
-  // It is only harmless today because production has no GITHUB_TOKEN; the moment
-  // one is set so the GitHub features work in production, an open endpoint would
-  // publish the whole private repo list to anyone who asked.
+  // see, private ones included (43 repos, 42 of them pushable). GITHUB_TOKEN IS
+  // set in production now, so this gate is load bearing rather than theoretical:
+  // without it the whole private repository list is one anonymous request away.
   "/api/github",
 ];
+// Deliberately NOT protected: /api/agent/tools/**. These are the tools the agent
+// runs during a live call, and the caller on a live call is an anonymous prospect
+// by design, exactly as with their own chat endpoints. Holding a conversation id
+// is what stands in for identity. The endpoint itself resolves the company and
+// the repository from that id, refuses unless the company opted in, and applies
+// its own per-call budget, so an auth wall here would only break the prospect.
+//
 // Deliberately NOT protected: /api/bookings/join/<token>. A guest who booked a call
 // has no account by design, and the unguessable join token IS their credential.
 // Gating it would lock every booked prospect out of their own meeting.
