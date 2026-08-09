@@ -419,6 +419,28 @@ export const api = {
     return response;
   },
 
+  /**
+   * The agent's generated face. Returns an empty result when generation is
+   * unavailable (mock mode, no XAI key, quota) — callers fall back to the
+   * initials avatar rather than a portrait that contradicts the voice.
+   */
+  async getAgentFace(): Promise<{ faceImageUrl?: string; faceVideoUrl?: string }> {
+    if (isMockMode()) return {};
+    const companyId = getStoredCompanyId();
+    if (!companyId) return {};
+    try {
+      const data = await realFetch<{
+        available?: boolean;
+        faceImageUrl?: string;
+        faceVideoUrl?: string;
+      }>(`/api/assets/agent-face?companyId=${encodeURIComponent(companyId)}`);
+      if (!data.available) return {};
+      return { faceImageUrl: data.faceImageUrl, faceVideoUrl: data.faceVideoUrl };
+    } catch {
+      return {};
+    }
+  },
+
   async startCall(conversationId: string) {
     if (isMockMode()) {
       const mockSession = await mock.mockStartCall(conversationId);
@@ -461,6 +483,9 @@ export const api = {
       body: JSON.stringify({ conversationId }),
     });
 
+    // Face is generated from the configured voice — never a bundled stock photo.
+    const face = await this.getAgentFace();
+
     return {
       id: `call_${Date.now()}`,
       conversationId,
@@ -471,7 +496,8 @@ export const api = {
         { type: "searching_knowledge" as const, label: "Loading company knowledge + tools" },
       ],
       media: {
-        faceImageUrl: "/agents/atlas-face.jpg",
+        faceImageUrl: face.faceImageUrl,
+        faceVideoUrl: face.faceVideoUrl,
         displayName: data.context?.agentName || "Atlas",
       },
       realtimeToken: data.token,

@@ -510,16 +510,14 @@ export async function mockSendMessage(conversationId: string, text: string): Pro
   };
 }
 
-/** Default mock face media — swap faceVideoUrl/streamUrl when Person B ships realtime face. */
+/**
+ * Mock face media. Deliberately carries no portrait: the real face is generated
+ * from the configured voice (see /api/assets/agent-face), and mock mode has no
+ * key to generate with. The call stage falls back to the initials avatar — a
+ * bundled stock photo would just re-introduce the voice/face mismatch.
+ */
 function mockCallMedia(agentName: string): CallSession["media"] {
-  return {
-    faceImageUrl: "/agents/atlas-face.jpg",
-    // When backend provides a talking loop or live stream, set:
-    // faceVideoUrl: "https://…/atlas-talk.mp4"
-    // streamUrl: "https://…/realtime.m3u8"
-    // realtimeToken: "…"
-    displayName: agentName,
-  };
+  return { displayName: agentName };
 }
 
 export async function mockStartCall(conversationId: string): Promise<CallSession> {

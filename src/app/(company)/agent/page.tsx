@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusDot } from "@/components/ui/StatusDot";
 import { useToast } from "@/components/ui/Toast";
+import { personaForVoice } from "@/lib/agent-persona";
 import { api } from "@/lib/api/client";
 import type { Company, McpServer, SlackConnection } from "@/types/ui";
 import { IconCheck, IconCopy, IconExternalLink, IconMessage, IconRefresh } from "@/components/icons";
@@ -71,7 +72,8 @@ export default function AgentPage() {
                 label="MCP tools"
                 value={String(mcp.reduce((n, s) => n + s.tools.length, 0))}
               />
-              <Stat label="Voice" value={company.agentVoice ?? "default"} />
+              {/* Voice drives the generated call face — see lib/agent-persona.ts */}
+              <Stat label="Voice" value={personaForVoice(company.agentVoice).label} />
             </div>
           </div>
 

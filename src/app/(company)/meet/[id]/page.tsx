@@ -101,13 +101,11 @@ export default function MeetRoomPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0b0f14] text-white">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col bg-bg text-fg">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-bg-elevated px-4 py-3">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
-            Live meet
-          </p>
-          <p className="truncate text-sm font-semibold">
+          <p className="mono-ts uppercase tracking-[0.14em]">Live meet</p>
+          <p className="truncate text-sm font-semibold text-fg">
             {duo ? "You · Teammate · " : "You · "}
             {agentName}
           </p>
@@ -119,7 +117,7 @@ export default function MeetRoomPage() {
             </Button>
           )}
           <Link href={`/threads/${id}`}>
-            <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+            <Button size="sm" variant="ghost">
               Open thread
             </Button>
           </Link>
@@ -143,8 +141,8 @@ export default function MeetRoomPage() {
               duo ? "sm:grid-cols-2" : "grid-cols-1",
             )}
           >
-            {/* You */}
-            <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
+            {/* You — a camera tile, so it stays ink even on the light page */}
+            <div className="relative overflow-hidden rounded-[18px] border border-border bg-fg">
               <video
                 ref={videoRef}
                 muted
@@ -162,22 +160,22 @@ export default function MeetRoomPage() {
                   </p>
                 </div>
               )}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-black/50 px-2.5 py-1 text-xs">
+              <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white">
                 <IconStatusDot tone="success" />
                 You
               </div>
             </div>
 
-            {/* Teammate seat */}
+            {/* Teammate seat — empty until they join, so it reads as a light placeholder */}
             {duo && (
-              <div className="relative overflow-hidden rounded-[18px] border border-dashed border-white/15 bg-white/[0.03]">
+              <div className="relative overflow-hidden rounded-[18px] border border-dashed border-border-strong bg-bg-elevated">
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/5">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-bg">
                     <IconVideo size={22} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">Teammate seat</p>
-                    <p className="mt-1 max-w-xs text-xs text-white/55">
+                    <p className="text-sm font-medium text-fg">Teammate seat</p>
+                    <p className="mt-1 max-w-xs text-xs text-fg-muted">
                       Share the invite link. When they open it, they join this room on the same
                       thread.
                     </p>
@@ -186,7 +184,7 @@ export default function MeetRoomPage() {
                     {copied ? "Copied" : "Copy invite link"}
                   </Button>
                 </div>
-                <div className="absolute bottom-3 left-3 rounded-full bg-black/50 px-2.5 py-1 text-xs text-white/80">
+                <div className="absolute bottom-3 left-3 rounded-full border border-border bg-bg px-2.5 py-1 text-xs text-fg-muted">
                   Waiting…
                 </div>
               </div>
@@ -194,12 +192,12 @@ export default function MeetRoomPage() {
           </div>
 
           {/* Atlas strip */}
-          <div className="flex items-center justify-between gap-3 rounded-[16px] border border-white/10 bg-white/5 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-[16px] border border-border bg-bg-elevated px-4 py-3 shadow-sm">
             <div className="flex items-center gap-3">
               <Avatar name={agentName} size="md" />
               <div>
-                <p className="text-sm font-semibold">{agentName}</p>
-                <p className="text-xs text-white/55">FDE on this thread · ready for voice</p>
+                <p className="text-sm font-semibold text-fg">{agentName}</p>
+                <p className="text-xs text-fg-muted">FDE on this thread · ready for voice</p>
               </div>
             </div>
             <Button size="sm" onClick={() => setCallOpen(true)} leftIcon={<IconPhone size={14} />}>
@@ -215,8 +213,8 @@ export default function MeetRoomPage() {
               className={cn(
                 "flex h-12 w-12 items-center justify-center rounded-full border transition-premium",
                 muted
-                  ? "border-danger/40 bg-danger/20 text-white"
-                  : "border-white/15 bg-white/10 text-white hover:bg-white/15",
+                  ? "border-danger/40 bg-danger-dim text-danger"
+                  : "border-border bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
               )}
               aria-label={muted ? "Unmute" : "Mute"}
             >
@@ -228,8 +226,8 @@ export default function MeetRoomPage() {
               className={cn(
                 "flex h-12 w-12 items-center justify-center rounded-full border transition-premium",
                 camOff
-                  ? "border-danger/40 bg-danger/20 text-white"
-                  : "border-white/15 bg-white/10 text-white hover:bg-white/15",
+                  ? "border-danger/40 bg-danger-dim text-danger"
+                  : "border-border bg-bg-elevated text-fg-secondary hover:bg-bg-hover",
               )}
               aria-label={camOff ? "Camera on" : "Camera off"}
             >
@@ -247,14 +245,14 @@ export default function MeetRoomPage() {
         </div>
 
         {/* Side thread — keep talking to Atlas in text during meet */}
-        <div className="hidden min-h-0 border-l border-white/10 bg-[#0e141c] lg:flex lg:flex-col">
-          <div className="border-b border-white/10 px-4 py-3">
-            <p className="text-xs font-medium text-white/80">Thread alongside the meet</p>
-            <p className="text-[11px] text-white/45">
+        <div className="hidden min-h-0 border-l border-border bg-bg-elevated lg:flex lg:flex-col">
+          <div className="border-b border-border px-4 py-3">
+            <p className="text-xs font-medium text-fg">Thread alongside the meet</p>
+            <p className="text-[11px] text-fg-muted">
               Notes and follow-ups stay on the same conversation.
             </p>
           </div>
-          <div className="min-h-0 flex-1 [&_header]:border-white/10 [&_header]:bg-transparent">
+          <div className="min-h-0 flex-1">
             <ThreadChat conversationId={id} agentName={agentName} showHeader={false} />
           </div>
         </div>
