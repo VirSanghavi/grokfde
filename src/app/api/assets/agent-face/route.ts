@@ -33,12 +33,53 @@ type FaceUpdate = Partial<
   >
 >;
 
-async function persist(companyId: string, patch: FaceUpdate) {
+/**
+ * Fallback cache for when the database cannot store the media — most likely
+ * because supabase/migrations for the agent_face_* columns have not been
+ * applied. Without this, every call regenerates a portrait and submits a fresh
+ * video job, which is slow and bills on each attempt. Per-instance and lossy on
+ * restart, but it bounds the damage.
+ */
+const memoryCache = new Map<string, FaceUpdate>();
+
+/** Returns false when the write did not land, so callers can fall back. */
+async function persist(companyId: string, patch: FaceUpdate): Promise<boolean> {
+  memoryCache.set(companyId, { ...memoryCache.get(companyId), ...patch });
   try {
-    await getSupabaseAdmin().from("companies").update(patch).eq("id", companyId);
+    // supabase-js resolves with { error } rather than throwing — an unchecked
+    // update here would fail completely silently.
+    const { error } = await getSupabaseAdmin()
+      .from("companies")
+      .update(patch)
+      .eq("id", companyId);
+    if (!error) return true;
+
+    // Postgres rejects the whole statement on one unknown column. Retry without
+    // the newest field so a partially-migrated database still caches the rest.
+    if ("agent_face_prompt_version" in patch) {
+      const { agent_face_prompt_version: _drop, ...rest } = patch;
+      const retry = await getSupabaseAdmin()
+        .from("companies")
+        .update(rest)
+        .eq("id", companyId);
+      if (!retry.error) {
+        console.warn(
+          "[agent-face] cached without agent_face_prompt_version — apply " +
+            "supabase/migrations/20260808260000_agent_face_prompt_version.sql.",
+        );
+        return true;
+      }
+    }
+
+    console.warn(
+      `[agent-face] could not cache generated media (${error.message}). ` +
+        "If this mentions a missing column, apply supabase/migrations — " +
+        "otherwise the face regenerates on every call.",
+    );
+    return false;
   } catch (err) {
-    // Serve what we generated even if caching failed.
     console.warn("[agent-face] could not cache generated media", err);
+    return false;
   }
 }
 
@@ -62,18 +103,33 @@ export async function GET(req: Request) {
       refresh: url.searchParams.get("refresh") ?? undefined,
     });
 
-    const company = await getCompanyById(companyId);
-    const persona = personaForVoice(company.agent_voice);
-    const agentName = company.agent_name || "Atlas";
-    // Either a different voice or newer framing means the cached media is wrong.
+    const row = await getCompanyById(companyId);
+    const persona = personaForVoice(row.agent_voice);
+    const agentName = row.agent_name || "Atlas";
+
+    // Layer the in-process cache over the row, so a database that cannot store
+    // this yet still avoids regenerating on every request.
+    const cached = { ...row, ...memoryCache.get(companyId) };
+
+    // A column that does not exist reads as undefined; one that exists but was
+    // never written reads as null. Only the latter is a real version mismatch —
+    // treating "column absent" as stale would regenerate forever.
+    const versionKnown = cached.agent_face_prompt_version !== undefined;
+    if (!versionKnown) {
+      console.warn(
+        "[agent-face] agent_face_prompt_version column missing — apply " +
+          "supabase/migrations so framing changes can invalidate cached media.",
+      );
+    }
+
     const stale =
       refresh ||
-      company.agent_face_voice !== persona.voice ||
-      (company.agent_face_prompt_version ?? 0) !== FACE_PROMPT_VERSION;
+      cached.agent_face_voice !== persona.voice ||
+      (versionKnown && (cached.agent_face_prompt_version ?? 0) !== FACE_PROMPT_VERSION);
 
-    let faceImageUrl = stale ? undefined : company.agent_face_image_url ?? undefined;
-    let faceVideoUrl = stale ? undefined : company.agent_face_video_url ?? undefined;
-    let videoRequestId = stale ? undefined : company.agent_face_video_request_id ?? undefined;
+    let faceImageUrl = stale ? undefined : cached.agent_face_image_url ?? undefined;
+    let faceVideoUrl = stale ? undefined : cached.agent_face_video_url ?? undefined;
+    let videoRequestId = stale ? undefined : cached.agent_face_video_request_id ?? undefined;
     let videoStatus: "none" | "pending" | "ready" | "failed" = faceVideoUrl ? "ready" : "none";
 
     // 1. Portrait — inline, fast.
