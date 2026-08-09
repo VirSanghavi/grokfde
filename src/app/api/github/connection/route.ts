@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ApiError, errorResponse, jsonOk } from "@/lib/server/errors";
 import { getRepository, parseRepositoryName, unwrapGitHub } from "@/lib/server/github";
 import { getSupabaseAdmin } from "@/lib/server/supabase-admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,7 +72,33 @@ async function findConnection(companyId: string) {
   return rows.find((row) => (row.metadata_json ?? {}).kind === KIND) ?? null;
 }
 
-function requireCompanyId(req: Request): string {
+/**
+ * KNOWN GAP, stated rather than hidden.
+ *
+ * `companyId` arrives from the caller and is NOT an authorization signal. Any
+ * signed-in operator can name any company here and read, replace, or remove its
+ * repository connection. That is a cross-tenant write, and on this route it is
+ * worse than a cross-tenant read, because it changes which repository the agent
+ * will branch and commit against.
+ *
+ * The correct fix is a membership check: resolve the user from the session and
+ * require a `company_members` row for the company before touching anything.
+ * That table does not exist in this project and there is no DDL access to
+ * create it, which is the same reason the whole operator console still resolves
+ * its company from a client-supplied id. This route is not weaker than the
+ * console around it, and it is not stronger either.
+ *
+ * What IS enforced here: a session, checked in the route rather than only in
+ * middleware, so a change to the middleware matcher cannot silently turn this
+ * into a public endpoint. Fail closed when auth is unavailable.
+ */
+async function requireOperator(req: Request): Promise<string> {
+  const supabase = await createClient();
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  if (!user) {
+    throw new ApiError("UNAUTHORIZED", "Sign in to manage the repository", { status: 401 });
+  }
+
   const url = new URL(req.url);
   const companyId = url.searchParams.get("companyId") ?? req.headers.get("x-company-id");
   if (!companyId) {
@@ -82,7 +109,7 @@ function requireCompanyId(req: Request): string {
 
 export async function GET(req: Request) {
   try {
-    const row = await findConnection(requireCompanyId(req));
+    const row = await findConnection(await requireOperator(req));
     return jsonOk({ connection: row ? serialize(row) : null });
   } catch (err) {
     return errorResponse(err);
@@ -91,6 +118,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+    if (!user) {
+      throw new ApiError("UNAUTHORIZED", "Sign in to manage the repository", { status: 401 });
+    }
+
     const body = ConnectSchema.parse(await req.json());
     const ref = unwrapGitHub(parseRepositoryName(body.repository));
 
@@ -153,7 +186,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const companyId = requireCompanyId(req);
+    const companyId = await requireOperator(req);
     const existing = await findConnection(companyId);
     if (!existing) return jsonOk({ connection: null });
 
