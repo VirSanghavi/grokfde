@@ -40,6 +40,24 @@ Before any production or multi-tenant deployment:
 3. Encrypt or vault MCP credentials at rest.
 4. Turn on Supabase Auth and scope company data to the owning user/org.
 
+### The one open authorization gap, named
+
+Supabase Auth IS on, and every operator surface and company-scoped API refuses
+anonymous callers. What is still missing is the link between a signed-in user
+and the company they are allowed to act on: there is no `company_members` table,
+because this project was created under an account we have no DDL access to, and
+the migration for it sits unapplied in `supabase/migrations/`.
+
+So `companyId` on company-scoped routes is authenticated but not authorized. A
+signed-in operator can name another company's id and read or change its data.
+Worst case today is `POST /api/github/connection`, which decides the repository
+the agent will branch and commit against.
+
+Apply `20260808234500_company_members.sql`, then require a membership row before
+any company-scoped read or write, and drop the client-supplied `X-Company-Id`
+path entirely. Until then this deployment is single tenant in practice and
+should be treated that way.
+
 ## Model trust boundary
 
 The FDE must not:
