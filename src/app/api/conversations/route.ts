@@ -19,6 +19,13 @@ const OpenSchema = z.object({
   companyName: z.string().optional(),
   personName: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
+  /**
+   * Start a deliberately new thread for an existing prospect. Without this,
+   * openSession resumes their latest conversation, which is what we want on a
+   * page refresh and what makes memory feel continuous. This is the explicit
+   * "new conversation" action.
+   */
+  forceNew: z.boolean().optional(),
 });
 
 /** Create or resume a prospect conversation session */
@@ -45,6 +52,7 @@ export async function POST(req: Request) {
       companyName: body.companyName,
       personName: body.personName,
       email: body.email || undefined,
+      forceNew: body.forceNew,
     });
 
     const memory = getProspectMemory(session.prospect);
@@ -86,15 +94,23 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const companyId = url.searchParams.get("companyId");
+    const prospectId = url.searchParams.get("prospectId");
     if (!companyId) {
       throw new ApiError("BAD_REQUEST", "companyId is required", { status: 400 });
     }
 
     const db = getSupabaseAdmin();
-    const { data, error } = await db
+    let query = db
       .from("conversations")
       .select("*, prospects(*)")
-      .eq("company_id", companyId)
+      .eq("company_id", companyId);
+
+    // The public prospect page calls this to list a visitor's own threads. Scoping
+    // to one prospect is what makes that safe: without it the response carries every
+    // other visitor's company name, person name, and stage.
+    if (prospectId) query = query.eq("prospect_id", prospectId);
+
+    const { data, error } = await query
       .order("updated_at", { ascending: false })
       .limit(50);
 
@@ -102,8 +118,30 @@ export async function GET(req: Request) {
       throw new ApiError("INTERNAL_ERROR", error.message, { status: 500 });
     }
 
+    const rows = data ?? [];
+
+    // A thread list needs a human label. Derive it from each thread's first real
+    // question in one batched query rather than N follow-up requests.
+    const summaries = new Map<string, string>();
+    if (rows.length > 0) {
+      const ids = rows.map((r) => String((r as Record<string, unknown>).id));
+      const { data: msgs } = await db
+        .from("messages")
+        .select("conversation_id, content, role, created_at")
+        .in("conversation_id", ids)
+        .eq("role", "user")
+        .order("created_at", { ascending: true });
+      for (const m of msgs ?? []) {
+        const row = m as Record<string, unknown>;
+        const key = String(row.conversation_id);
+        if (summaries.has(key)) continue;
+        const text = String(row.content ?? "").replace(/\s+/g, " ").trim();
+        if (text) summaries.set(key, text.slice(0, 120));
+      }
+    }
+
     return jsonOk({
-      conversations: (data ?? []).map((row) => {
+      conversations: rows.map((row) => {
         const r = row as Record<string, unknown>;
         const prospect = r.prospects as Record<string, unknown> | null;
         return {
@@ -111,6 +149,10 @@ export async function GET(req: Request) {
           companyId: r.company_id,
           prospectId: r.prospect_id,
           updatedAt: r.updated_at,
+          createdAt: r.created_at,
+          // Empty when the visitor opened a thread but never sent anything. The
+          // client shows an honest "no messages yet" rather than inventing a title.
+          summary: summaries.get(String(r.id)) ?? "",
           prospect: prospect
             ? {
                 id: prospect.id,

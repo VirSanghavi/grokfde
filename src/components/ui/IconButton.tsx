@@ -3,12 +3,51 @@
 import { cn } from "@/lib/utils";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
+type Size = "sm" | "md" | "lg";
+type Variant = "ghost" | "solid" | "outline" | "danger" | "live";
+
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Required. Becomes both the accessible name and the tooltip. */
   label: string;
   children: ReactNode;
-  size?: "sm" | "md" | "lg";
-  variant?: "ghost" | "solid" | "danger";
+  size?: Size;
+  variant?: Variant;
 }
+
+/**
+ * Icon-only control. Dense chrome keeps the compact box on a mouse, and any
+ * coarse pointer gets a real 44x44 target without overlapping its neighbours.
+ */
+const sizes: Record<Size, string> = {
+  sm: "h-9 w-9",
+  md: "h-10 w-10",
+  lg: "h-11 w-11",
+};
+
+const variants: Record<Variant, string> = {
+  ghost: [
+    "text-ink-2 hover:bg-hover hover:text-ink",
+    "disabled:text-ink-4 disabled:hover:bg-transparent",
+  ].join(" "),
+  solid: [
+    "border border-rule bg-surface text-ink shadow-[var(--elevation-1)] hover:bg-hover",
+    "disabled:border-rule disabled:bg-sunken disabled:text-ink-4 disabled:shadow-none",
+  ].join(" "),
+  outline: [
+    "border border-rule-strong text-ink hover:bg-hover",
+    "disabled:border-rule disabled:text-ink-4",
+  ].join(" "),
+  danger: [
+    "text-critical hover:bg-critical-soft",
+    "disabled:text-ink-4 disabled:hover:bg-transparent",
+  ].join(" "),
+  live: [
+    // Live is fill-only, so the resting icon is ink on the live tint and the
+    // vermilion takes over as a solid fill on hover.
+    "border border-live-rule bg-live-soft text-ink hover:bg-live hover:text-white",
+    "disabled:border-rule disabled:bg-sunken disabled:text-ink-4",
+  ].join(" "),
+};
 
 export function IconButton({
   label,
@@ -16,31 +55,25 @@ export function IconButton({
   className,
   size = "md",
   variant = "ghost",
+  type = "button",
+  disabled,
   ...props
 }: IconButtonProps) {
-  const sizes = {
-    sm: "h-8 w-8",
-    md: "h-10 w-10",
-    lg: "h-12 w-12",
-  };
-  const variants = {
-    ghost: "text-fg-secondary hover:bg-bg-hover hover:text-fg",
-    solid: "bg-bg-hover text-fg hover:bg-bg-active border border-border",
-    danger: "text-danger hover:bg-danger/15",
-  };
-
   return (
     <button
+      type={type}
+      {...props}
+      disabled={disabled}
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex items-center justify-center rounded-[var(--radius-md)] transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        "transition-premium relative inline-flex shrink-0 items-center justify-center",
+        "rounded-[var(--radius-control)] active:scale-[0.96] disabled:cursor-not-allowed disabled:active:scale-100",
+        "[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11",
         sizes[size],
         variants[variant],
-        className
+        className,
       )}
-      {...props}
     >
       {children}
     </button>

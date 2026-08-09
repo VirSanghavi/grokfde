@@ -1,6 +1,12 @@
 import { isMockMode, slugify } from "@/lib/utils";
 import * as mock from "@/lib/mock";
-import { getStoredCompanyId, setStoredCompany } from "@/lib/session";
+import {
+  clearStoredProspectId,
+  getStoredCompanyId,
+  getStoredProspectId,
+  setStoredCompany,
+  setStoredProspectId,
+} from "@/lib/session";
 import {
   mapAnalysis,
   mapCompany,
@@ -40,26 +46,85 @@ import type {
   WorkspaceRepository,
 } from "@/types/ui";
 
+/**
+ * A failed request carries WHY it failed, not just a sentence.
+ *
+ * The prospect page has to tell three outcomes apart and show a different
+ * designed surface for each: this address has no engineer (404), the database
+ * is down (503), and the network dropped. Collapsing all of them into
+ * `new Error(message)` is what turned a missing slug into an unhandled
+ * "Company not found" rejection with no way to render anything sensible.
+ */
+export class ApiClientError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly details?: unknown;
+
+  constructor(
+    message: string,
+    options: { status: number; code?: string; details?: unknown },
+  ) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = options.status;
+    this.code = options.code ?? "INTERNAL_ERROR";
+    this.details = options.details;
+  }
+
+  /** The address is valid but nothing is published there. */
+  get isNotFound(): boolean {
+    return this.status === 404 || this.code === "NOT_FOUND";
+  }
+
+  /** Ours to fix, and worth a retry: outage, timeout, bad credentials. */
+  get isServerFault(): boolean {
+    return this.status >= 500 || this.code === "DATABASE_ERROR";
+  }
+}
+
+/** Offline, DNS failure, or the dev server restarting mid-request. */
+export class NetworkError extends Error {
+  constructor(cause?: unknown) {
+    super("Could not reach the server");
+    this.name = "NetworkError";
+    this.cause = cause;
+  }
+}
+
 async function realFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const companyId = getStoredCompanyId();
-  const res = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(companyId ? { "X-Company-Id": companyId } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
+
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(companyId ? { "X-Company-Id": companyId } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (cause) {
+    // fetch only rejects on a transport failure, never on a 4xx/5xx.
+    throw new NetworkError(cause);
+  }
+
   if (!res.ok) {
     const body = await res.text();
     let msg = body || `Request failed: ${res.status}`;
+    let code: string | undefined;
+    let details: unknown;
     try {
-      const j = JSON.parse(body) as { error?: { message?: string } };
+      const j = JSON.parse(body) as {
+        error?: { message?: string; code?: string; details?: unknown };
+      };
       if (j.error?.message) msg = j.error.message;
+      code = j.error?.code;
+      details = j.error?.details;
     } catch {
-      /* raw */
+      /* Not JSON. Keep the raw body as the message. */
     }
-    throw new Error(msg);
+    throw new ApiClientError(msg, { status: res.status, code, details });
   }
   return res.json() as Promise<T>;
 }
@@ -304,27 +369,53 @@ export const api = {
 
   async ensureProspectSession(companySlug: string, prospectId?: string) {
     if (isMockMode()) return mock.mockEnsureProspectSession(companySlug, prospectId);
-    // Resolve company by slug
+
+    // Throws ApiClientError with isNotFound when no engineer is published at
+    // this address. The page renders a designed surface for that; it is a
+    // normal outcome of a mistyped subdomain, not a crash.
     const companyRes = await realFetch<{ company: Record<string, unknown> }>(
       `/api/company?slug=${encodeURIComponent(companySlug)}`,
     );
     const company = mapCompany(companyRes.company);
     setStoredCompany(company.id, company.slug);
 
-    const session = await realFetch<{
-      conversation: Record<string, unknown>;
-      prospect: Record<string, unknown>;
-    }>("/api/conversations", {
-      method: "POST",
-      body: JSON.stringify({
-        companyId: company.id,
-        prospectId,
-        companyName: "Prospect",
-      }),
-    });
+    // Identity, in priority order: an explicit id in the URL, then the one
+    // minted on this visitor's first visit. Sending neither is what made every
+    // page load create a brand new prospect row, so a returning visitor lost
+    // their thread and everything Atlas had learned about them.
+    const remembered = prospectId ?? getStoredProspectId(companySlug) ?? undefined;
+
+    const openSession = (id?: string) =>
+      realFetch<{
+        conversation: Record<string, unknown>;
+        prospect: Record<string, unknown>;
+      }>("/api/conversations", {
+        method: "POST",
+        // No companyName. The server stores null for an unknown visitor, and
+        // null is the truth. Writing "Prospect" here is what put the literal
+        // word "Prospect" on screen as though it were the visitor's company.
+        body: JSON.stringify({ companyId: company.id, prospectId: id }),
+      });
+
+    let session: Awaited<ReturnType<typeof openSession>>;
+    try {
+      session = await openSession(remembered);
+    } catch (err) {
+      // A remembered id can outlive the row it points at, after a database
+      // reset or a demo cleanup. Start fresh rather than stranding the visitor
+      // on an error they cannot act on.
+      const stale =
+        remembered !== undefined &&
+        err instanceof ApiClientError &&
+        err.isNotFound;
+      if (!stale) throw err;
+      clearStoredProspectId(companySlug);
+      session = await openSession(undefined);
+    }
 
     const conversation = mapConversation(session.conversation);
     const prospect = mapProspect(session.prospect);
+    setStoredProspectId(companySlug, prospect.id);
 
     const detail = await realFetch<{
       messages: Record<string, unknown>[];
@@ -335,6 +426,38 @@ export const api = {
       prospect,
       conversation,
       messages: (detail.messages || []).map(mapMessage),
+    };
+  },
+
+  /**
+   * Emails the visitor the conversation so far. Real send through
+   * /api/email/send, which drafts with Grok from the same FDE prompt the chat
+   * uses and records the result as an email-channel message on the thread.
+   */
+  async emailConversation(input: { conversationId: string; to: string }) {
+    if (isMockMode()) {
+      return {
+        to: input.to,
+        subject: "Your conversation",
+        provider: "mock",
+      };
+    }
+    const data = await realFetch<{
+      email: { id: string; to: string; subject: string; provider: string };
+    }>("/api/email/send", {
+      method: "POST",
+      body: JSON.stringify({
+        conversationId: input.conversationId,
+        to: input.to,
+        generate: true,
+        instruction:
+          "Summarise what we covered in this conversation so far, including any technical specifics and the concrete next step. Write it as the engineer who was in the conversation.",
+      }),
+    });
+    return {
+      to: data.email.to,
+      subject: data.email.subject,
+      provider: data.email.provider,
     };
   },
 
@@ -365,23 +488,21 @@ export const api = {
     return response;
   },
 
+  /**
+   * Issues live voice credentials.
+   *
+   * There is deliberately no simulated fallback. A canned script played as
+   * though it were Atlas is worse than an honest failure: it demos a product
+   * that does not exist, and it is indistinguishable from the real thing right
+   * up until someone asks it a question. When credentials are missing this
+   * throws, and the call surface says so and offers a retry.
+   */
   async startCall(conversationId: string) {
     if (isMockMode()) {
-      const mockSession = await mock.mockStartCall(conversationId);
-      return {
-        ...mockSession,
-        realtimeToken: `mock_voice_${Date.now()}`,
-        realtimeUrl: "wss://api.x.ai/v1/realtime",
-        websocketProtocols: [] as string[],
-        mock: true,
-        voiceSession: {
-          voice: "eve",
-          instructions: "You are a demo FDE. Be concise and technical.",
-          turn_detection: { type: "server_vad" },
-          tools: [] as Array<Record<string, unknown>>,
-        },
-        context: { agentName: mockSession.media?.displayName || "Atlas" },
-      };
+      throw new ApiClientError(
+        "Live voice is unavailable in mock mode. Set NEXT_PUBLIC_MOCK_AI=false and provide XAI_API_KEY.",
+        { status: 503, code: "VOICE_TOKEN_FAILED" },
+      );
     }
 
     const data = await realFetch<{
@@ -407,15 +528,20 @@ export const api = {
       body: JSON.stringify({ conversationId }),
     });
 
+    if (data.mock) {
+      throw new ApiClientError(
+        "The voice service is not configured on this server, so no live call can be placed.",
+        { status: 503, code: "VOICE_TOKEN_FAILED" },
+      );
+    }
+
     return {
       id: `call_${Date.now()}`,
       conversationId,
       status: "connecting" as const,
       startedAt: new Date().toISOString(),
       transcript: [] as CallTranscriptLine[],
-      liveActivity: [
-        { type: "searching_knowledge" as const, label: "Loading company knowledge + tools" },
-      ],
+      liveActivity: [] as Array<{ type: "searching_knowledge"; label: string }>,
       media: {
         faceImageUrl: "/agents/atlas-face.jpg",
         displayName: data.context?.agentName || "Atlas",
@@ -652,7 +778,7 @@ export const api = {
 
   async getAccountRoom(prospectId: string) {
     if (isMockMode()) return mock.mockGetAccountRoom(prospectId);
-    // Prefer account by prospect — create if needed
+    // Prefer account by prospect, creating one if needed
     const list = await realFetch<{ accounts: Array<{ id: string; prospect_id: string }> }>(
       `/api/accounts?prospectId=${encodeURIComponent(prospectId)}`,
     );
@@ -791,6 +917,9 @@ function mapMemoryFromChat(raw: Record<string, unknown>): ProspectMemory {
     painPoints: (raw.painPoints as string[]) || [],
     requirements: (raw.requirements as string[]) || [],
     objections: (raw.objections as string[]) || [],
+    // The server has always computed this and /api/voice/token already passed
+    // it into the call; it was being dropped on the floor here.
+    unresolvedQuestions: (raw.unresolvedQuestions as string[]) || [],
     nextAction: String(raw.nextAction || ""),
   };
 }

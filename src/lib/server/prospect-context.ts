@@ -72,6 +72,8 @@ export async function openSession(args: {
   companyName?: string;
   personName?: string;
   email?: string;
+  /** Explicit "start a new thread" action; skips resuming the latest one. */
+  forceNew?: boolean;
 }): Promise<{ prospect: ProspectRow; conversation: ConversationRow }> {
   const db = getSupabaseAdmin();
 
@@ -114,6 +116,24 @@ export async function openSession(args: {
       personName: args.personName,
       email: args.email,
     });
+  }
+
+  // A returning prospect keeps their thread. Creating a fresh conversation on every
+  // page load would silently discard their history and orphan the memory built on it.
+  // forceNew is the deliberate exception: the visitor asked for a new thread.
+  if (!args.forceNew) {
+    const { data: existing } = await db
+      .from("conversations")
+      .select("*")
+      .eq("prospect_id", prospect.id)
+      .eq("company_id", args.companyId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      return { prospect, conversation: existing as ConversationRow };
+    }
   }
 
   const conversation = await createConversation({

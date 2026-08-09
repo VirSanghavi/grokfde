@@ -1,0 +1,46 @@
+{
+  "suite": "voice",
+  "baseUrl": "http://localhost:3000",
+  "runId": "qa-msl4ekvtzuk3",
+  "totalMs": 8873,
+  "pass": 5,
+  "fail": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "suite": "voice",
+      "name": "POST api.x.ai/v1/realtime/client_secrets mints an ephemeral secret",
+      "status": "pass",
+      "detail": "expires in 300s",
+      "ms": 81
+    },
+    {
+      "suite": "voice",
+      "name": "GET api.x.ai/v1/tts/voices lists the configured voice",
+      "status": "pass",
+      "detail": "26 voices, atlas=true",
+      "ms": 120
+    },
+    {
+      "suite": "voice",
+      "name": "realtime WebSocket returns audio and a transcript (direct mint)",
+      "status": "pass",
+      "detail": "4 deltas, 63KB audio, transcript \"the demo is ready.\"",
+      "ms": 1167
+    },
+    {
+      "suite": "voice",
+      "name": "GET /api/voice/token returns a live credential for a real conversation",
+      "status": "pass",
+      "detail": "grok-voice-latest, instructions 13225 chars",
+      "ms": 1560
+    },
+    {
+      "suite": "voice",
+      "name": "realtime WebSocket returns audio and a transcript (token from our server)",
+      "status": "pass",
+      "detail": "5 deltas, 74KB audio, transcript \"Atlas is online.\"",
+      "ms": 5319
+    }
+  ]
+}

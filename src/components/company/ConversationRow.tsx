@@ -1,46 +1,45 @@
-import { Badge } from "@/components/ui/Badge";
-import { cn, formatRelativeTime } from "@/lib/utils";
-import type { Channel } from "@/types/ui";
+import { cn, formatRelativeTime, humanize } from "@/lib/utils";
 
-const channelTone: Record<Channel, "neutral" | "info" | "call" | "accent"> = {
-  chat: "info",
-  email: "neutral",
-  call: "call",
-  system: "accent",
-};
-
+/**
+ * One thread in the inbox rail. A name, where the deal stands, and when it last
+ * moved. Grouped by a hairline, never a card, and never a coloured capsule.
+ */
 export function ConversationRow({
   name,
-  channel,
-  preview,
+  personName,
+  stage,
   updatedAt,
   active,
   onClick,
 }: {
   name: string;
-  channel: Channel;
-  preview: string;
+  personName?: string | null;
+  stage: string;
   updatedAt: string;
   active?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-current={active ? "true" : undefined}
       className={cn(
-        "flex w-full flex-col gap-1.5 border-b border-border px-4 py-3.5 text-left transition-colors",
-        active ? "bg-bg-hover" : "bg-bg-elevated hover:bg-bg-hover"
+        "transition-premium flex min-h-11 w-full flex-col gap-1 border-b border-rule px-5 py-3.5 text-left hover:bg-hover",
+        // Below md there is no second pane, so a selected row would be marking
+        // something the reader cannot see.
+        active && "md:bg-sunken",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium text-fg">{name}</span>
-        <span className="shrink-0 font-mono text-[11px] text-fg-faint">
-          {formatRelativeTime(updatedAt)}
-        </span>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="truncate text-body font-medium text-ink">{name}</span>
+        <span className="mono-ts tabular shrink-0">{formatRelativeTime(updatedAt)}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <Badge tone={channelTone[channel]}>{channel}</Badge>
-        <span className="truncate text-xs text-fg-muted">{preview}</span>
+      <div className="flex items-baseline gap-2">
+        <span className="mono-ts shrink-0">{humanize(stage)}</span>
+        {personName ? (
+          <span className="truncate text-caption">{personName}</span>
+        ) : null}
       </div>
     </button>
   );

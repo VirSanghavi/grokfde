@@ -1,0 +1,151 @@
+{
+  "suite": "routes",
+  "baseUrl": "http://localhost:3000",
+  "runId": "qa-msl4ejjq3kfv",
+  "totalMs": 1689,
+  "pass": 16,
+  "fail": 0,
+  "skipped": 4,
+  "results": [
+    {
+      "suite": "routes",
+      "name": "GET /conversations/:id",
+      "status": "skip",
+      "detail": "no conversation exists for the demo company yet",
+      "ms": 0
+    },
+    {
+      "suite": "routes",
+      "name": "GET /accounts/:id",
+      "status": "skip",
+      "detail": "no prospect exists for the demo company yet",
+      "ms": 0
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book/:slug/c/:id",
+      "status": "skip",
+      "detail": "no booking exists for the demo company yet",
+      "ms": 0
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book/:slug/join/:token",
+      "status": "skip",
+      "detail": "no booking join token available",
+      "ms": 0
+    },
+    {
+      "suite": "routes",
+      "name": "GET / - marketing home",
+      "status": "pass",
+      "detail": "196088 bytes, 139ms",
+      "ms": 142
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book - booking index",
+      "status": "pass",
+      "detail": "153352 bytes (via 307 redirect to /book/grok-fde), 274ms",
+      "ms": 442
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book/grok-fde - booking page",
+      "status": "pass",
+      "detail": "153352 bytes, 179ms",
+      "ms": 180
+    },
+    {
+      "suite": "routes",
+      "name": "GET /fde/grok-fde - prospect FDE room",
+      "status": "pass",
+      "detail": "22503 bytes, 33ms",
+      "ms": 34
+    },
+    {
+      "suite": "routes",
+      "name": "GET /login - login",
+      "status": "pass",
+      "detail": "23971 bytes, 47ms",
+      "ms": 48
+    },
+    {
+      "suite": "routes",
+      "name": "GET /signup - signup",
+      "status": "pass",
+      "detail": "24776 bytes, 57ms",
+      "ms": 57
+    },
+    {
+      "suite": "routes",
+      "name": "GET /dashboard - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fdashboard",
+      "ms": 7
+    },
+    {
+      "suite": "routes",
+      "name": "GET /onboarding - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fonboarding",
+      "ms": 4
+    },
+    {
+      "suite": "routes",
+      "name": "GET /demos - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fdemos",
+      "ms": 9
+    },
+    {
+      "suite": "routes",
+      "name": "GET /knowledge - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fknowledge",
+      "ms": 5
+    },
+    {
+      "suite": "routes",
+      "name": "GET /conversations - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fconversations",
+      "ms": 5
+    },
+    {
+      "suite": "routes",
+      "name": "GET /agent - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Fagent",
+      "ms": 4
+    },
+    {
+      "suite": "routes",
+      "name": "GET /field-signals - gated, redirects to sign in",
+      "status": "pass",
+      "detail": "307 -> /login?next=%2Ffield-signals",
+      "ms": 4
+    },
+    {
+      "suite": "routes",
+      "name": "GET /fde/qa-missing-qa-msl4ejjq3kfv - unknown target is handled server-side",
+      "status": "pass",
+      "detail": "HTTP 200 (resolved client-side; see browser suite)",
+      "ms": 84
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book/qa-missing-qa-msl4ejjq3kfv - unknown target is handled server-side",
+      "status": "pass",
+      "detail": "HTTP 404",
+      "ms": 325
+    },
+    {
+      "suite": "routes",
+      "name": "GET /book/grok-fde/join/qa-bad-token-qa-msl4ejjq3kfv - unknown target is handled server-side",
+      "status": "pass",
+      "detail": "HTTP 200 (resolved client-side; see browser suite)",
+      "ms": 36
+    }
+  ]
+}

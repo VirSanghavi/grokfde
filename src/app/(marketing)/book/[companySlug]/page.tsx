@@ -5,12 +5,21 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookDemoPage({
+export default async function BookMeetingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ companySlug: string }>;
+  /**
+   * `date` and `at` let another surface hand a visitor straight to one specific
+   * slot, which is what the availability rail on the home page does. Read on the
+   * server and passed as props rather than read with `useSearchParams`, so the
+   * first paint already has the right day and no Suspense boundary is needed.
+   */
+  searchParams: Promise<{ date?: string; at?: string }>;
 }) {
   const { companySlug } = await params;
+  const { date, at } = await searchParams;
   let company;
   try {
     company = await getCompanyBySlug(companySlug);
@@ -19,29 +28,31 @@ export default async function BookDemoPage({
   }
 
   return (
-    <div className="min-h-dvh bg-bg text-fg antialiased">
-      <header className="mx-auto flex w-full max-w-[920px] items-center justify-between px-5 pt-6 sm:px-6 sm:pt-8">
+    <div className="min-h-dvh bg-sunken text-ink antialiased">
+      <header className="flex w-full items-center justify-between border-b border-rule bg-surface px-4 py-3 sm:px-6">
         <Link
           href="/"
-          className="text-[16px] font-semibold tracking-[-0.02em] text-fg transition-opacity hover:opacity-70"
+          className="-ml-1 flex h-11 items-center rounded-[8px] px-1 text-[16px] font-semibold tracking-[-0.02em] text-ink transition-opacity duration-[120ms] hover:opacity-70"
         >
           Grok FDE
         </Link>
         <Link
           href={`/fde/${company.slug}`}
-          className="rounded-full px-3 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:text-fg"
+          className="-mr-2 flex h-11 items-center rounded-[8px] px-2 text-[14px] font-medium text-ink-3 transition-colors duration-[120ms] hover:text-ink"
         >
           Chat instead
         </Link>
       </header>
 
-      <main className="px-4 py-10 sm:px-6 sm:py-14">
+      <main>
         <BookingScheduler
           company={{
             slug: company.slug,
             name: company.name,
             agentName: company.agent_name,
           }}
+          initialDate={/^\d{4}-\d{2}-\d{2}$/.test(date ?? "") ? date : undefined}
+          initialSlotIso={at}
         />
       </main>
     </div>

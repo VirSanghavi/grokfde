@@ -42,6 +42,33 @@ export function textModel(): string {
   return process.env.XAI_TEXT_MODEL || "grok-4.5";
 }
 
+/**
+ * Model for the visible chat answer.
+ *
+ * Defaults to the main text model. Measured against the live API, grok-4.5
+ * spends ~4s reasoning before its first visible character and that floor does
+ * not move with `reasoning_effort` ("low" 4.2s / 4.9s, "minimal" 4.8s / 4.1s
+ * across two runs). `grok-4.20-0309-non-reasoning` produces its first token in
+ * ~0.55s. Set `XAI_CHAT_MODEL` to trade reasoning depth for a near-instant
+ * cursor when a human is watching the panel.
+ */
+export function chatModel(): string {
+  return process.env.XAI_CHAT_MODEL || textModel();
+}
+
+/**
+ * Model for background structured extraction (prospect memory).
+ *
+ * Measured on the real extraction prompt: grok-4.5 9.5s, grok-4.3 7.4s,
+ * grok-4.20-0309-non-reasoning 2.5s — all three returning valid JSON, and the
+ * non-reasoning model matching grok-4.5's stack extraction exactly. Reasoning
+ * buys nothing on a copy-fields-into-a-schema task, so this path does not pay
+ * for it. Override with `XAI_BACKGROUND_MODEL`.
+ */
+export function backgroundModel(): string {
+  return process.env.XAI_BACKGROUND_MODEL || "grok-4.20-0309-non-reasoning";
+}
+
 export function voiceModel(): string {
   return process.env.XAI_VOICE_MODEL || "grok-voice-latest";
 }
@@ -160,6 +187,13 @@ function extractToolEvents(data: Record<string, unknown>): Array<{
   return events;
 }
 
+/**
+ * Grok 4.5 burns reasoning tokens before it emits a single visible character.
+ * At the default effort that is ~5s of dead air; at "low" it is ~1.2s. Chat is
+ * the one surface where a human is watching the cursor, so it asks for "low".
+ */
+export type ReasoningEffort = "low" | "high";
+
 export type AskGrokOptions = {
   messages: GrokMessage[];
   model?: string;
@@ -172,6 +206,7 @@ export type AskGrokOptions = {
   functionTools?: FunctionToolConfig[];
   enableWebSearch?: boolean;
   maxOutputTokens?: number;
+  reasoningEffort?: ReasoningEffort;
 };
 
 export type AskGrokResult = {
@@ -181,9 +216,10 @@ export type AskGrokResult = {
 };
 
 /**
- * Primary Grok call via Responses API with optional knowledge + MCP + functions.
+ * Builds the Responses API payload. Shared verbatim by the blocking and streaming
+ * paths so knowledge, MCP, and function tools behave identically in both.
  */
-export async function askGrok(options: AskGrokOptions): Promise<AskGrokResult> {
+function buildResponsesBody(options: AskGrokOptions): Record<string, unknown> {
   const tools: Array<Record<string, unknown>> = [];
 
   if (options.collectionIds?.length) {
@@ -247,6 +283,16 @@ export async function askGrok(options: AskGrokOptions): Promise<AskGrokResult> {
 
   if (tools.length) body.tools = tools;
   if (options.maxOutputTokens) body.max_output_tokens = options.maxOutputTokens;
+  if (options.reasoningEffort) body.reasoning_effort = options.reasoningEffort;
+
+  return body;
+}
+
+/**
+ * Primary Grok call via Responses API with optional knowledge + MCP + functions.
+ */
+export async function askGrok(options: AskGrokOptions): Promise<AskGrokResult> {
+  const body = buildResponsesBody(options);
 
   const res = await xaiFetch("/responses", {
     method: "POST",
@@ -291,6 +337,7 @@ async function askGrokChatCompletions(
       model: options.model ?? textModel(),
       messages,
       temperature: options.temperature ?? 0.4,
+      ...(options.reasoningEffort ? { reasoning_effort: options.reasoningEffort } : {}),
     }),
   });
 
@@ -308,6 +355,347 @@ async function askGrokChatCompletions(
     raw: data,
     toolEvents: [],
   };
+}
+
+// ─── Streaming ─────────────────────────────────────────────────────
+
+export type GrokStreamEvent =
+  /** A visible token delta. Append to the rendered answer. */
+  | { type: "text"; delta: string }
+  /** Model reasoning summary. Useful as an "Atlas is thinking" affordance. */
+  | { type: "reasoning"; delta: string }
+  /** Knowledge retrieval / web search / MCP call observed mid-generation. */
+  | { type: "tool"; toolType: string; name?: string; label: string }
+  /** A function tool the model wants executed, with complete JSON arguments. */
+  | { type: "function_call"; name: string; arguments: string; callId?: string };
+
+export type StreamGrokOptions = AskGrokOptions & {
+  signal?: AbortSignal;
+  onEvent?: (event: GrokStreamEvent) => void;
+};
+
+/**
+ * Parses a `text/event-stream` body into complete SSE blocks.
+ *
+ * Network reads split wherever TCP feels like it, so a single `data:` line
+ * routinely arrives across two or three chunks. Everything is buffered until a
+ * real newline shows up, and the decoder runs in streaming mode so a multi-byte
+ * UTF-8 character straddling a chunk boundary is not corrupted.
+ */
+async function* sseBlocks(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<{ event: string | null; data: string }> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let event: string | null = null;
+  let dataLines: string[] = [];
+
+  const flush = (): { event: string | null; data: string } | null => {
+    if (!dataLines.length) {
+      event = null;
+      return null;
+    }
+    const block = { event, data: dataLines.join("\n") };
+    event = null;
+    dataLines = [];
+    return block;
+  };
+
+  const consumeLine = (raw: string) => {
+    const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+    if (line.startsWith(":")) return; // keepalive comment
+    const colon = line.indexOf(":");
+    const field = colon === -1 ? line : line.slice(0, colon);
+    let value = colon === -1 ? "" : line.slice(colon + 1);
+    if (value.startsWith(" ")) value = value.slice(1);
+    if (field === "event") event = value;
+    else if (field === "data") dataLines.push(value);
+  };
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let nl: number;
+      while ((nl = buffer.indexOf("\n")) !== -1) {
+        const raw = buffer.slice(0, nl);
+        buffer = buffer.slice(nl + 1);
+        if (raw === "" || raw === "\r") {
+          const block = flush();
+          if (block) yield block;
+          continue;
+        }
+        consumeLine(raw);
+      }
+    }
+
+    buffer += decoder.decode();
+    if (buffer.length) consumeLine(buffer);
+    const tail = flush();
+    if (tail) yield tail;
+  } finally {
+    // Releases the upstream socket on early exit (abort, client disconnect,
+    // or a `break` from the consumer) instead of leaking the connection.
+    try {
+      await reader.cancel();
+    } catch {
+      /* already closed */
+    }
+  }
+}
+
+function streamErrorFrom(payload: Record<string, unknown>): string | null {
+  const err = payload.error;
+  if (!err) return null;
+  if (typeof err === "string") return err;
+  if (typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    return String(e.message ?? e.code ?? JSON.stringify(e));
+  }
+  return "Unknown upstream error";
+}
+
+/**
+ * Streaming counterpart to {@link askGrok}, over the Responses API.
+ *
+ * The Responses API is the only xAI surface that accepts `input_file`
+ * attachments and `mcp` tools, so streaming through it is what keeps knowledge
+ * retrieval and tool calls working. Falls back to the OpenAI-compatible
+ * `/chat/completions` stream when Responses rejects the request, mirroring the
+ * fallback `askGrok` already performs.
+ *
+ * Resolves to the same {@link AskGrokResult} shape the blocking path returns,
+ * with `raw.output` reconstructed from the streamed items, so every downstream
+ * consumer keeps working unchanged.
+ */
+export async function streamGrok(options: StreamGrokOptions): Promise<AskGrokResult> {
+  const body = { ...buildResponsesBody(options), stream: true };
+
+  const res = await fetch(`${XAI_BASE}/responses`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey()}`,
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => "");
+    if (res.status === 404 || res.status === 400) {
+      return streamGrokChatCompletions(options, errText);
+    }
+    throw new ApiError("XAI_ERROR", `Grok stream failed: ${res.status}`, {
+      status: 502,
+      details: errText.slice(0, 800),
+    });
+  }
+
+  const emit = options.onEvent ?? (() => {});
+  const chunks: string[] = [];
+  const output: Array<Record<string, unknown>> = [];
+  const toolEvents: AskGrokResult["toolEvents"] = [];
+  let raw: Record<string, unknown> = {};
+
+  for await (const block of sseBlocks(res.body)) {
+    if (block.data === "[DONE]") break;
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(block.data) as Record<string, unknown>;
+    } catch {
+      continue; // a non-JSON frame is not worth killing a live answer over
+    }
+
+    const kind = String(payload.type ?? block.event ?? "");
+
+    // An error can arrive after a 200 and after tokens have already flowed.
+    if (kind === "error" || kind === "response.failed" || payload.error) {
+      const message = streamErrorFrom(payload) ?? "Grok stream reported an error";
+      throw new ApiError("XAI_ERROR", `Grok stream error: ${message}`, {
+        status: 502,
+        details: message.slice(0, 800),
+      });
+    }
+
+    if (kind === "response.output_text.delta") {
+      const delta = typeof payload.delta === "string" ? payload.delta : "";
+      if (delta) {
+        chunks.push(delta);
+        emit({ type: "text", delta });
+      }
+      continue;
+    }
+
+    if (kind === "response.reasoning_summary_text.delta") {
+      const delta = typeof payload.delta === "string" ? payload.delta : "";
+      if (delta) emit({ type: "reasoning", delta });
+      continue;
+    }
+
+    if (kind === "response.output_item.done") {
+      const item = payload.item as Record<string, unknown> | undefined;
+      if (!item) continue;
+      output.push(item);
+
+      const itemType = String(item.type ?? "");
+      if (itemType === "file_search_call" || itemType === "file_search") {
+        const ev = { type: "searching_knowledge", label: "Searching company knowledge" };
+        toolEvents.push(ev);
+        emit({ type: "tool", toolType: ev.type, label: ev.label });
+      } else if (itemType === "web_search_call" || itemType === "web_search") {
+        const ev = { type: "searching_web", label: "Searching the web" };
+        toolEvents.push(ev);
+        emit({ type: "tool", toolType: ev.type, label: ev.label });
+      } else if (itemType === "mcp_call" || itemType === "mcp_tool_call") {
+        const name = String(item.name ?? item.tool_name ?? "tool");
+        const ev = { type: "using_tool", name, label: `Using ${name}` };
+        toolEvents.push(ev);
+        emit({ type: "tool", toolType: ev.type, name, label: ev.label });
+      } else if (itemType === "function_call") {
+        const name = String(item.name ?? "tool");
+        const args = String(item.arguments ?? "{}");
+        const ev = { type: "using_tool", name, label: `Using ${name}` };
+        toolEvents.push(ev);
+        emit({ type: "tool", toolType: ev.type, name, label: ev.label });
+        emit({
+          type: "function_call",
+          name,
+          arguments: args,
+          callId: item.call_id ? String(item.call_id) : undefined,
+        });
+      }
+      continue;
+    }
+
+    if (kind === "response.completed" && payload.response) {
+      raw = payload.response as Record<string, unknown>;
+    }
+  }
+
+  // Downstream code reads `raw.output` to find function calls. Rebuild it from
+  // the streamed items so the blocking and streaming paths look identical.
+  raw = { ...raw, output };
+
+  return { content: chunks.join("").trim(), raw, toolEvents };
+}
+
+/**
+ * OpenAI-compatible `/chat/completions` SSE stream.
+ *
+ * Used as the fallback when the Responses API rejects a request. Knowledge
+ * attachments and MCP tools are not expressible here, so this path is text plus
+ * function tools only.
+ */
+async function streamGrokChatCompletions(
+  options: StreamGrokOptions,
+  priorError?: string,
+): Promise<AskGrokResult> {
+  const messages = options.messages.map((m) => ({
+    role: m.role === "developer" ? "system" : m.role,
+    content: m.content,
+  }));
+
+  const tools = (options.functionTools ?? []).map((fn) => ({
+    type: "function",
+    function: { name: fn.name, description: fn.description, parameters: fn.parameters },
+  }));
+
+  const res = await fetch(`${XAI_BASE}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey()}`,
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify({
+      model: options.model ?? textModel(),
+      messages,
+      temperature: options.temperature ?? 0.4,
+      stream: true,
+      ...(tools.length ? { tools } : {}),
+      ...(options.reasoningEffort ? { reasoning_effort: options.reasoningEffort } : {}),
+    }),
+    signal: options.signal,
+  });
+
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => "");
+    throw new ApiError("XAI_ERROR", `Grok chat stream failed: ${res.status}`, {
+      status: 502,
+      details: { responsesError: priorError, chatError: errText.slice(0, 800) },
+    });
+  }
+
+  const emit = options.onEvent ?? (() => {});
+  const chunks: string[] = [];
+  const toolEvents: AskGrokResult["toolEvents"] = [];
+  // tool_calls stream in fragments keyed by index; assemble before executing.
+  const pending = new Map<number, { id?: string; name: string; args: string }>();
+
+  for await (const block of sseBlocks(res.body)) {
+    if (block.data === "[DONE]") break;
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(block.data) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+
+    const errMessage = streamErrorFrom(payload);
+    if (errMessage) {
+      throw new ApiError("XAI_ERROR", `Grok chat stream error: ${errMessage}`, {
+        status: 502,
+        details: errMessage.slice(0, 800),
+      });
+    }
+
+    const choice = (payload.choices as Array<Record<string, unknown>> | undefined)?.[0];
+    const delta = choice?.delta as Record<string, unknown> | undefined;
+    if (!delta) continue;
+
+    if (typeof delta.content === "string" && delta.content) {
+      chunks.push(delta.content);
+      emit({ type: "text", delta: delta.content });
+    }
+
+    if (typeof delta.reasoning_content === "string" && delta.reasoning_content) {
+      emit({ type: "reasoning", delta: delta.reasoning_content });
+    }
+
+    for (const call of (delta.tool_calls as Array<Record<string, unknown>>) ?? []) {
+      const index = Number(call.index ?? 0);
+      const fn = call.function as Record<string, unknown> | undefined;
+      const entry = pending.get(index) ?? { name: "", args: "" };
+      if (call.id) entry.id = String(call.id);
+      if (fn?.name) entry.name = String(fn.name);
+      if (typeof fn?.arguments === "string") entry.args += fn.arguments;
+      pending.set(index, entry);
+    }
+  }
+
+  const output: Array<Record<string, unknown>> = [];
+  for (const entry of pending.values()) {
+    if (!entry.name) continue;
+    output.push({
+      type: "function_call",
+      name: entry.name,
+      arguments: entry.args || "{}",
+      ...(entry.id ? { call_id: entry.id } : {}),
+    });
+    const ev = { type: "using_tool", name: entry.name, label: `Using ${entry.name}` };
+    toolEvents.push(ev);
+    emit({ type: "tool", toolType: ev.type, name: entry.name, label: ev.label });
+    emit({ type: "function_call", name: entry.name, arguments: entry.args || "{}", callId: entry.id });
+  }
+
+  return { content: chunks.join("").trim(), raw: { output }, toolEvents };
 }
 
 export async function askGrokWithKnowledge(
@@ -356,6 +744,7 @@ export async function askGrokStructured<T>(
       })),
       temperature: options.temperature ?? 0.2,
       response_format: { type: "json_object" },
+      ...(options.reasoningEffort ? { reasoning_effort: options.reasoningEffort } : {}),
     }),
   });
 

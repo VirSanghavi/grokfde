@@ -1,0 +1,648 @@
+{
+  "suite": "api",
+  "baseUrl": "http://localhost:3000",
+  "runId": "qa-msl4dy5x4gwv",
+  "totalMs": 27622,
+  "pass": 40,
+  "fail": 2,
+  "skipped": 49,
+  "results": [
+    {
+      "suite": "api",
+      "name": "GET /api/health returns service status",
+      "status": "pass",
+      "detail": "grok-4.5 / grok-voice-latest",
+      "ms": 40
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/company?slug=grok-fde resolves the demo company",
+      "status": "pass",
+      "detail": "Grok FDE / agent Atlas",
+      "ms": 182
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/company?slug=<missing> is a clean JSON 404, not a 500 or HTML",
+      "status": "pass",
+      "detail": "No company is published at \"qa-no-such-company-qa-msl4dy5x4gwv\"",
+      "ms": 162
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/company?id=<demo> includes knowledge sources",
+      "status": "pass",
+      "detail": "3 sources, 3 ready",
+      "ms": 381
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/company rejects a payload with no name or slug",
+      "status": "pass",
+      "detail": "Enter a company name to create your FDE.",
+      "ms": 207
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/company creates the QA fixture company",
+      "status": "pass",
+      "detail": "id 1a88dfcf-3b7e-40c6-9699-0d94316e816f",
+      "ms": 673
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/company never lets two companies share one slug",
+      "status": "pass",
+      "detail": "auto-suffixed to \"qa-co-qa-msl4dy5x4gwv-2\", original slug still resolves",
+      "ms": 675
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/knowledge/paste ingests text and returns a frozen source shape",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 14
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/knowledge/paste rejects a non-uuid companyId",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 9
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/knowledge/paste rejects empty content",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations opens a session by companySlug",
+      "status": "pass",
+      "detail": "conversation e16fedff-03bd-4a32-bd4f-7804e69c6849",
+      "ms": 605
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations resumes rather than duplicating for the same prospect",
+      "status": "pass",
+      "detail": "reused existing conversation",
+      "ms": 493
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations with neither companyId nor companySlug is a 400",
+      "status": "pass",
+      "detail": "companyId or companySlug is required",
+      "ms": 37
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations with an unknown slug is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 132
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/conversations?companyId= lists conversations",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 19
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/conversations without companyId is a 400",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 9
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/conversations/:id returns the conversation bundle",
+      "status": "pass",
+      "detail": "200 OK",
+      "ms": 594
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/conversations/:id for an absent id is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 156
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations/:id/message returns the frozen chat shape",
+      "status": "pass",
+      "detail": "15158ms, 1169 chars, stack=[\"Django monolith\",\"Heroku\",\"Postgres\"]",
+      "ms": 15158
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations/:id/message rejects an empty message",
+      "status": "pass",
+      "detail": "Invalid message payload",
+      "ms": 65
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/conversations/:id/message for an absent conversation is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 164
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/availability?month= returns day markers for the demo company",
+      "status": "pass",
+      "detail": "24 bookable days in 2026-08",
+      "ms": 422
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/availability?date= returns slots for a day",
+      "status": "pass",
+      "detail": "48 slots on 2026-08-15",
+      "ms": 266
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/availability rejects an invalid timezone",
+      "status": "pass",
+      "detail": "Invalid timeZone",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/availability with neither date nor month is a 400",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 133
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/availability for an unknown company is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 156
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/bookings creates a demo booking on a real free slot",
+      "status": "pass",
+      "detail": "6c444ac2-04c5-4323-88f6-6cf9bf0f2aa9 at 12:00 PM",
+      "ms": 1730
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/bookings rejects double-booking the same slot",
+      "status": "pass",
+      "detail": "409 That time was just taken. Pick another.",
+      "ms": 297
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/bookings rejects an invalid email",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 67
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/bookings rejects a start time in the past",
+      "status": "pass",
+      "detail": "rejected",
+      "ms": 283
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings?slug= does not hand guest PII to an anonymous caller",
+      "status": "fail",
+      "detail": "1 of 1 booking(s) expose guest identity without a session, e.g. \"qa-msl4dy5x4gwv-guest\" <qa-msl4dy5x4gwv-guest@qa.invalid>. These are real people who booked a call, and this is the data behind /demos.",
+      "ms": 407
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings?slug= lists bookings for a company",
+      "status": "pass",
+      "detail": "1 bookings",
+      "ms": 269
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings without slug or company header is a 400",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 8
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/:id for an absent booking is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 123
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/join/:token resolves the booking and join window",
+      "status": "pass",
+      "detail": "canJoin=false -> /fde/qa-co-qa-msl4dy5x4gwv/p/5a098007-f81d-479a-aa17-d6adc8d10e00?call=1&booking=6c444ac2-04c5-4323-88f6-6cf9bf0f2aa9",
+      "ms": 244
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/bookings/join/:token for an unknown token is a clean 404",
+      "status": "pass",
+      "detail": "Demo link not found",
+      "ms": 150
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/bookings/join/:token outside the join window is refused, not a 500",
+      "status": "pass",
+      "detail": "403 refused early join",
+      "ms": 133
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/voice/token mints a realtime credential with session context",
+      "status": "pass",
+      "detail": "grok-voice-latest, voice=atlas, 6072 chars of instructions",
+      "ms": 668
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/voice/token without conversationId is a 400",
+      "status": "pass",
+      "detail": "conversationId is required",
+      "ms": 18
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/voice/token for an absent conversation is a clean 404",
+      "status": "pass",
+      "detail": "404 NOT_FOUND",
+      "ms": 158
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/voice/token accepts a JSON body",
+      "status": "pass",
+      "detail": "200 OK",
+      "ms": 642
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/prospects?companyId= lists prospects",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 14
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/prospects without companyId is a 400",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 10
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/prospects/:id returns the fixture prospect",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/prospects/:id for an absent prospect is a clean 404",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "PATCH /api/prospects/:id rejects an invalid payload",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/mcp (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/mcp (missing companyId)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/mcp?companyId= (happy)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/knowledge/url (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/knowledge/upload (no body)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/calls/complete (invalid payload)",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 13
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/assets/architecture (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 10
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/assets/image (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/assets/video (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/email/send (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/email/inbound (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 41
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/escalations (missing companyId)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 13
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/escalations?companyId= (happy)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "PATCH /api/escalations (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 11
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/field-signals (happy)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 16
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/field-signals (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts?companyId= (happy)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/accounts (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/status (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/timeline (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/slack (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/accounts/:id/blockers (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 11
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/accounts/:id/decisions (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/accounts/:id/issues (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 2
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/accounts/:id/deployment (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/workspaces (missing params)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/workspaces (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/workspaces/:id (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/workspaces/:id/repositories (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/workspaces/:id/plan (absent workspace)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 8
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/workspaces/:id/build (missing planId)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 7
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/workspaces/:id/analyze (absent workspace)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/implementation-runs/:id (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 7
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/implementation-runs/:id/pull-request (absent)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 10
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/demo/slack-message (invalid payload)",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/slack/connect-channel (invalid payload)",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 7
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/slack/oauth/callback (missing code)",
+      "status": "pass",
+      "detail": "400 BAD_REQUEST",
+      "ms": 14
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/slack/install",
+      "status": "pass",
+      "detail": "status 200",
+      "ms": 6
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/deployment for an absent account returns nothing, not junk",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 4
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/blockers for an absent account returns nothing, not junk",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/decisions for an absent account returns nothing, not junk",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 3
+    },
+    {
+      "suite": "api",
+      "name": "GET /api/accounts/:id/issues for an absent account returns nothing, not junk",
+      "status": "skip",
+      "detail": "gated: needs an operator session (gating asserted in the auth suite)",
+      "ms": 2
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/slack/events answers the url_verification challenge",
+      "status": "pass",
+      "detail": "challenge echoed",
+      "ms": 5
+    },
+    {
+      "suite": "api",
+      "name": "POST /api/slack/events rejects an unsigned forged event",
+      "status": "fail",
+      "detail": "an unsigned forged Slack event was accepted with status 200 (body: {\"ok\":true,\"ignored\":true,\"reason\":\"no_account_mapping\"}). The route never reads x-slack-signature, so this endpoint takes writes from anyone on the internet.",
+      "ms": 133
+    }
+  ]
+}

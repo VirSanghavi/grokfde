@@ -1,56 +1,33 @@
 import type { AgentEvent } from "@/types/ui";
 import { cn } from "@/lib/utils";
-import { IconGlobe, IconLoader, IconSearch, IconSparkles, IconUser, IconWrench } from "@/components/icons";
 
-
-const iconFor = (type: AgentEvent["type"]) => {
-  switch (type) {
-    case "searching_knowledge":
-      return IconSearch;
-    case "searching_web":
-      return IconGlobe;
-    case "using_tool":
-      return IconWrench;
-    case "generating_image":
-    case "generating_architecture":
-      return IconSparkles;
-    case "needs_human":
-      return IconUser;
-    default:
-      return IconLoader;
-  }
-};
-
+/**
+ * What the engineer is actually doing, as it happens.
+ *
+ * Watching a real knowledge lookup or tool call is the proof this is not a
+ * scripted demo, so these lines report real events only. There is no timed
+ * "thinking" animation and no pulsing dot: the label appears when the event
+ * arrives and stays when it is done. Machine activity, set in mono.
+ */
 export function AgentActivity({
   events,
   className,
-  live,
 }: {
   events: AgentEvent[];
   className?: string;
-  live?: boolean;
 }) {
   if (!events.length) return null;
 
   return (
-    <div className={cn("space-y-1.5", className)}>
-      {events.map((event, i) => {
-        const Icon = iconFor(event.type);
-        return (
-          <div
-            key={`${event.type}-${i}-${event.label}`}
-            className="flex items-center gap-2 font-mono text-xs text-fg-muted animate-fade"
-          >
-            <Icon
-              className={cn(
-                "h-3.5 w-3.5 shrink-0",
-                live && i === events.length - 1 && "animate-pulse-soft text-brand"
-              )}
-            />
-            <span>{event.label.endsWith("...") ? event.label : `${event.label}...`}</span>
-          </div>
-        );
-      })}
-    </div>
+    <ul className={cn("space-y-1", className)}>
+      {events.map((event, i) => (
+        <li
+          key={`${event.type}-${i}-${event.label}`}
+          className="font-mono text-[0.8125rem] leading-[1.45] text-ink-3"
+        >
+          {event.label}
+        </li>
+      ))}
+    </ul>
   );
 }

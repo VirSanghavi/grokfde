@@ -1,9 +1,9 @@
 "use client";
 
-import { ProspectChat } from "@/components/prospect/ProspectChat";
+import { ProspectPage } from "@/components/prospect/ProspectPage";
 import { useParams } from "next/navigation";
 
 export default function ProspectFdePage() {
   const params = useParams<{ companySlug: string }>();
-  return <ProspectChat companySlug={params.companySlug} />;
+  return <ProspectPage companySlug={params.companySlug} />;
 }

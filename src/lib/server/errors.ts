@@ -2,6 +2,15 @@ export type ErrorCode =
   | "BAD_REQUEST"
   | "NOT_FOUND"
   | "UNAUTHORIZED"
+  // The request was well formed and refused anyway: too many attempts, a uniqueness
+  // clash, or a dependency this deployment was never given. Collapsing these into
+  // BAD_REQUEST loses the only thing the caller can act on.
+  | "RATE_LIMITED"
+  | "CONFLICT"
+  | "SERVICE_UNAVAILABLE"
+  // A database outage is not a missing row. Callers already throw this code;
+  // it belongs in the union so the distinction survives type checking.
+  | "DATABASE_ERROR"
   | "XAI_ERROR"
   | "XAI_COLLECTION_FAILED"
   | "KNOWLEDGE_INGESTION_FAILED"

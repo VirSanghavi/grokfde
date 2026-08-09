@@ -1,7 +1,13 @@
-import { Badge } from "@/components/ui/Badge";
+import { cn, humanize } from "@/lib/utils";
 import type { ProspectMemory } from "@/types/ui";
 
-function Section({
+/**
+ * What the agent remembers about one prospect, carried across chat, calls,
+ * email, and Slack. Every field here is written by the extraction pass, so an
+ * empty field says it is empty rather than showing a dash.
+ */
+
+function Group({
   label,
   children,
 }: {
@@ -9,28 +15,25 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">{label}</p>
-      {children}
+    <div className="border-t border-rule py-4">
+      <p className="text-label">{label}</p>
+      <div className="mt-2">{children}</div>
     </div>
   );
 }
 
-function ChipList({ items, empty = "—" }: { items: string[]; empty?: string }) {
-  if (!items.length) {
-    return <p className="text-sm text-fg-faint">{empty}</p>;
+function Lines({ items, empty }: { items: string[]; empty: string }) {
+  if (items.length === 0) {
+    return <p className="text-caption">{empty}</p>;
   }
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <ul className="space-y-1.5">
       {items.map((item) => (
-        <span
-          key={item}
-          className="rounded-md border border-border bg-bg px-2 py-1 text-xs text-fg-secondary"
-        >
+        <li key={item} className="text-body text-ink-2">
           {item}
-        </span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -44,40 +47,46 @@ export function ProspectMemoryPanel({
   className?: string;
 }) {
   return (
-    <aside
-      className={`flex h-full flex-col gap-5 overflow-y-auto p-5 scrollbar-thin ${className ?? ""}`}
-    >
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">Prospect</p>
-        <h3 className="mt-1 text-lg font-semibold text-fg">{name}</h3>
-        {memory.summary && (
-          <p className="mt-2 text-sm leading-relaxed text-fg-muted">{memory.summary}</p>
-        )}
+    <aside className={cn("scrollbar-thin h-full overflow-y-auto px-5 py-5", className)}>
+      <p className="text-label">What we know</p>
+      <h3 className="mt-1.5 text-title text-ink">{name}</h3>
+      {memory.summary ? (
+        <p className="mt-2 max-w-[46ch] text-body text-ink-2">{memory.summary}</p>
+      ) : (
+        <p className="mt-2 max-w-[46ch] text-caption">
+          Nothing summarised yet. This fills in from the first real exchange.
+        </p>
+      )}
+
+      <div className="mt-5">
+        <Group label="Stage">
+          <p className="text-body text-ink">{humanize(String(memory.stage))}</p>
+        </Group>
+
+        <Group label="Their stack">
+          <Lines items={memory.currentStack} empty="No stack mentioned yet." />
+        </Group>
+
+        <Group label="Pain points">
+          <Lines items={memory.painPoints} empty="None recorded." />
+        </Group>
+
+        <Group label="Requirements">
+          <Lines items={memory.requirements} empty="None recorded." />
+        </Group>
+
+        <Group label="Objections">
+          <Lines items={memory.objections} empty="None raised so far." />
+        </Group>
+
+        <Group label="Next step">
+          {memory.nextAction ? (
+            <p className="max-w-[46ch] text-body text-ink-2">{memory.nextAction}</p>
+          ) : (
+            <p className="text-caption">Not decided yet.</p>
+          )}
+        </Group>
       </div>
-
-      <Section label="Stage">
-        <Badge tone="accent">{String(memory.stage).replace(/-/g, " ")}</Badge>
-      </Section>
-
-      <Section label="Stack">
-        <ChipList items={memory.currentStack} empty="No stack recorded yet" />
-      </Section>
-
-      <Section label="Pain points">
-        <ChipList items={memory.painPoints} />
-      </Section>
-
-      <Section label="Requirements">
-        <ChipList items={memory.requirements} />
-      </Section>
-
-      <Section label="Objections">
-        <ChipList items={memory.objections} />
-      </Section>
-
-      <Section label="Next step">
-        <p className="text-sm text-fg-secondary">{memory.nextAction || "—"}</p>
-      </Section>
     </aside>
   );
 }

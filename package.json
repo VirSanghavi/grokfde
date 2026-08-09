@@ -8,7 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:api": "bash docs/smoke-test.sh"
+    "test:api": "bash docs/smoke-test.sh",
+    "qa": "node scripts/qa/all.mjs",
+    "qa:api": "node scripts/qa/api.mjs",
+    "qa:routes": "node scripts/qa/routes.mjs",
+    "qa:browser": "node scripts/qa/browser.mjs",
+    "qa:auth": "node scripts/qa/auth.mjs",
+    "qa:clean": "node scripts/qa/clean.mjs",
+    "qa:voice": "node scripts/qa/voice.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -20,6 +27,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
     "@eslint/eslintrc": "^3.3.6",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.2.0",
@@ -27,6 +35,7 @@
     "@types/react-dom": "^19.2.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.0",
+    "playwright": "^1.62.1",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3"

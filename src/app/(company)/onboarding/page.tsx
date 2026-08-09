@@ -1,714 +1,550 @@
 "use client";
 
-import { FileDropzone } from "@/components/ui/FileDropzone";
+import { IconAlert, IconArrowRight, IconCheck, IconCopy, LogoMark } from "@/components/icons";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api/client";
-import { cn } from "@/lib/utils";
-import type { CompanyKnowledgeSummary } from "@/types/ui";
-import { IconFile, IconGlobe, IconLink, IconServer, IconUpload } from "@/components/icons";
+import { PERSONAS, getPersonaById, personaForSlug, resolvePersona } from "@/lib/personas";
+import { cn, errorMessage, slugify } from "@/lib/utils";
+import type { Company } from "@/types/ui";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-const TOTAL_STEPS = 5;
 
-const LEARNING_STEPS = [
-  "Uploading sources",
-  "Reading materials",
-  "Building company model",
-  "Extracting technical knowledge",
-  "Ready",
-];
+
+/**
+ * The root domain a shared company link lives on.
+ *
+ * Development runs on localhost, which has no wildcard, so the link we show is
+ * still the real product link. The local path link sits next to it so the same
+ * screen is testable without DNS.
+ */
+function shareRootDomain(): string {
+  if (typeof window === "undefined") return "grokfde.com";
+  const host = window.location.host.split(":")[0]!.toLowerCase();
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
+    host.endsWith(".vercel.app")
+  ) {
+    return "grokfde.com";
+  }
+  return host.split(".").slice(-2).join(".");
+}
+
+type KnowledgeState =
+  | { status: "none" }
+  | { status: "reading"; url: string }
+  | { status: "ready"; title: string }
+  | { status: "failed"; url: string; message: string };
 
 export default function OnboardingPage() {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
   const [companyName, setCompanyName] = useState("");
-  const [agentName, setAgentName] = useState("Atlas");
-  const [pasteTitle, setPasteTitle] = useState("Product overview");
-  const [pasteContent, setPasteContent] = useState("");
-  const [learningIndex, setLearningIndex] = useState(0);
-  const [summary, setSummary] = useState<CompanyKnowledgeSummary | null>(null);
+  const [agentName, setAgentName] = useState("");
+  const [personaId, setPersonaId] = useState<string | null>(null);
+  const [siteUrl, setSiteUrl] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sourcesAdded, setSourcesAdded] = useState(0);
-  const [teachMode, setTeachMode] = useState<"upload" | "paste" | "url" | "mcp" | null>(null);
-  const [url, setUrl] = useState("");
-  const [mcpLabel, setMcpLabel] = useState("");
-  const [mcpUrl, setMcpUrl] = useState("");
-  const mainRef = useRef<HTMLDivElement>(null);
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
+
+  const [company, setCompany] = useState<Company | null>(null);
+  const [knowledge, setKnowledge] = useState<KnowledgeState>({ status: "none" });
+  const [rootDomain, setRootDomain] = useState("grokfde.com");
+  const doneHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => setRootDomain(shareRootDomain()), []);
 
   useEffect(() => {
-    mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-    setError(null);
-  }, [step, teachMode]);
+    if (company) doneHeadingRef.current?.focus();
+  }, [company]);
 
-  async function createCompany() {
-    setBusy(true);
-    setError(null);
+  const previewSlug = useMemo(() => slugify(companyName) || "your-company", [companyName]);
+  // Auto assigned from the slug, so nobody has to choose, and two companies that
+  // never choose still get different engineers. One click swaps it.
+  const autoPersona = useMemo(() => personaForSlug(previewSlug), [previewSlug]);
+  const persona = (personaId && getPersonaById(personaId)) || autoPersona;
+  const effectiveAgent = agentName.trim() || persona.name;
+
+  /** Reads the site in the background. Never blocks the finished agent. */
+  async function ingestSite(url: string) {
+    setKnowledge({ status: "reading", url });
     try {
-      await api.createCompany({ name: companyName.trim(), agentName: agentName.trim() });
-      setStep(3);
+      const source = await api.addUrlKnowledge({ url });
+      setKnowledge({ status: "ready", title: source.title });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create company. Try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addPaste() {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.pasteKnowledge({ title: pasteTitle.trim() || "Untitled", content: pasteContent });
-      setSourcesAdded((n) => n + 1);
-      setPasteContent("");
-      setTeachMode(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add knowledge.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addUpload(files: File[]) {
-    setBusy(true);
-    setError(null);
-    try {
-      for (const file of files) {
-        const content = await file.text().catch(() => "");
-        await api.uploadKnowledge({
-          title: file.name,
-          type: "file",
-          file,
-          content: content || undefined,
-        });
-        setSourcesAdded((n) => n + 1);
-      }
-      setTeachMode(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addUrl() {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.addUrlKnowledge({ url: url.trim() });
-      setSourcesAdded((n) => n + 1);
-      setUrl("");
-      setTeachMode(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add URL.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addMcp() {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.connectMcp({
-        label: mcpLabel.trim() || "MCP server",
-        serverUrl: mcpUrl.trim(),
-        allowWrite: false,
+      setKnowledge({
+        status: "failed",
+        url,
+        message: errorMessage(err, "We could not read that page."),
       });
-      setSourcesAdded((n) => n + 1);
-      setMcpLabel("");
-      setMcpUrl("");
-      setTeachMode(null);
+    }
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const name = companyName.trim();
+    if (!name) {
+      setNameError("Enter your company name to create your engineer.");
+      return;
+    }
+    if (busy) return;
+
+    setNameError(undefined);
+    setError(null);
+    setBusy(true);
+
+    try {
+      const created = await api.createCompany({
+        name,
+        agentName: effectiveAgent,
+        agentVoice: persona.voice,
+      });
+      setCompany(created);
+
+      const url = siteUrl.trim();
+      if (url) void ingestSite(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not connect MCP.");
+      setError(errorMessage(err, "We could not create your workspace. Try again."));
     } finally {
       setBusy(false);
     }
-  }
-
-  async function runLearning() {
-    setStep(4);
-    setLearningIndex(0);
-    setError(null);
-    try {
-      for (let i = 0; i < LEARNING_STEPS.length; i++) {
-        setLearningIndex(i);
-        await new Promise((r) => setTimeout(r, 650));
-      }
-      const company = await api.completeOnboarding();
-      setSummary(
-        company.knowledgeSummary ?? {
-          whatYouSell: "Your product",
-          primaryBuyers: ["Technical buyers"],
-          coreUseCases: ["Primary use cases from your sources"],
-          commonObjections: ["To be refined from more knowledge"],
-        },
-      );
-      setStep(5);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Training failed. Try again.");
-      setStep(3);
-    }
-  }
-
-  function onCompanySubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!companyName.trim()) return;
-    setStep(2);
-  }
-
-  function onAgentSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!agentName.trim() || busy) return;
-    void createCompany();
   }
 
   return (
-    <div className="min-h-dvh bg-bg text-fg antialiased">
-      <header className="mx-auto flex w-full max-w-[720px] items-center justify-between px-5 pt-6 sm:px-8 sm:pt-8">
-        <Link
-          href="/"
-          className="text-[16px] font-semibold tracking-[-0.02em] text-fg transition-opacity hover:opacity-70"
-        >
-          Grok FDE
+    <main className="flex min-h-dvh flex-col bg-paper">
+      <header className="flex items-center justify-between gap-4 border-b border-rule px-5 py-4 sm:px-8 lg:px-12">
+        <Link href="/" className="flex items-center gap-2.5">
+          <LogoMark size={24} title="Grok FDE home" />
+          <span className="text-[0.9375rem] font-semibold tracking-[-0.02em] text-ink">
+            Grok FDE
+          </span>
         </Link>
-        <Link
-          href="/login"
-          className="rounded-full px-3 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:text-fg"
-        >
-          Sign in
-        </Link>
+        <p className="text-label">{company ? "Live" : "Set up"}</p>
       </header>
 
-      <div
-        ref={mainRef}
-        className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[480px] flex-col px-5 pb-16 pt-10 sm:px-6 sm:pt-12"
-      >
-        <div className="mb-8 sm:mb-10">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-muted">
-              {step <= 3 ? "Set up" : step === 4 ? "Training" : "Ready"}
+      {company ? (
+        <ReadyView
+          company={company}
+          rootDomain={rootDomain}
+          knowledge={knowledge}
+          onRetryKnowledge={() => {
+            if (knowledge.status === "failed") void ingestSite(knowledge.url);
+          }}
+          headingRef={doneHeadingRef}
+        />
+      ) : (
+        <div className="flex flex-1 flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+          <div className="flex-1">
+            <h1 className="max-w-[18ch] text-display-l text-ink">
+              Deploy your forward deployed engineer.
+            </h1>
+            <p className="mt-4 max-w-[58ch] text-[1rem] leading-relaxed text-ink-2">
+              One field. {effectiveAgent} comes online with your company name, a voice, and a
+              public link you can send to a prospect right now. Everything else is editable
+              later.
             </p>
-            <p className="tabular-nums text-[12px] font-medium text-fg-faint">
-              {Math.min(step, TOTAL_STEPS)} / {TOTAL_STEPS}
-            </p>
-          </div>
-          <div
-            className="mt-3 flex gap-1.5"
-            role="progressbar"
-            aria-valuenow={step}
-            aria-valuemin={1}
-            aria-valuemax={TOTAL_STEPS}
-            aria-label={`Step ${step} of ${TOTAL_STEPS}`}
-          >
-            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((n) => (
-              <div
-                key={n}
-                className={cn(
-                  "h-[3px] flex-1 rounded-full transition-[background-color] duration-300",
-                  n < step && "bg-fg/45",
-                  n === step && "bg-fg",
-                  n > step && "bg-border-strong",
-                )}
-              />
-            ))}
-          </div>
-        </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="mb-6 rounded-2xl border border-danger/20 bg-danger-dim px-4 py-3 text-[13.5px] leading-snug text-danger"
-          >
-            {error}
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className="ml-2 font-medium underline-offset-2 hover:underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <StepFrame
-            title="What company are you deploying for?"
-            body="This becomes the identity your FDE represents to every prospect."
-          >
-            <form onSubmit={onCompanySubmit} className="space-y-5">
-              <Field
+            <form onSubmit={onSubmit} className="mt-9 max-w-[34rem] space-y-5" noValidate>
+              <Input
                 label="Company name"
-                htmlFor="company-name"
+                name="company-name"
                 autoFocus
-                value={companyName}
-                onChange={setCompanyName}
-                placeholder="Acme Infrastructure"
                 autoComplete="organization"
+                value={companyName}
+                onChange={(e) => {
+                  setCompanyName(e.target.value);
+                  if (nameError) setNameError(undefined);
+                }}
+                placeholder="Acme Infrastructure"
+                error={nameError}
+                hint="This is the only thing we need."
+                required
               />
-              <PrimaryButton type="submit" disabled={!companyName.trim()}>
-                Continue
-              </PrimaryButton>
-            </form>
-          </StepFrame>
-        )}
 
-        {step === 2 && (
-          <StepFrame
-            title="Name your engineer"
-            body="Prospects meet this person in chat, on video calls, and later in Slack."
-          >
-            <form onSubmit={onAgentSubmit} className="space-y-5">
-              <Field
-                label="FDE name"
-                htmlFor="agent-name"
-                autoFocus
-                value={agentName}
-                onChange={setAgentName}
-                placeholder="Atlas"
-                autoComplete="off"
+              <Input
+                label="Website or docs URL"
+                name="site-url"
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                value={siteUrl}
+                onChange={(e) => setSiteUrl(e.target.value)}
+                placeholder="docs.acme.com"
+                hint={`Optional. ${effectiveAgent} reads it and learns your product while you keep going.`}
               />
-              <p className="text-[13px] leading-relaxed text-fg-muted">
-                Voice is calibrated for clear technical conversation. You can refine tone later.
-              </p>
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                <GhostButton type="button" onClick={() => setStep(1)}>
-                  Back
-                </GhostButton>
-                <PrimaryButton
-                  type="submit"
-                  className="sm:flex-1"
-                  disabled={!agentName.trim() || busy}
-                  loading={busy}
-                >
-                  Continue
-                </PrimaryButton>
+
+              <div className="border-t border-rule pt-4">
+                <p className="text-[0.875rem] text-ink-3">
+                  Your engineer is{" "}
+                  <span className="font-medium text-ink">{effectiveAgent}</span>, a{" "}
+                  {persona.gender === "female" ? "woman" : "man"} with the matching voice.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowDetails((v) => !v)}
+                    className="transition-premium font-medium text-ink underline underline-offset-4 hover:text-ink-2"
+                  >
+                    {showDetails ? "Done" : "Change"}
+                  </button>
+                </p>
+
+                {showDetails && (
+                  <div className="mt-4">
+                    <p className="text-label">Pick an engineer</p>
+                    <ul className="mt-2 divide-y divide-rule border-t border-rule">
+                      {PERSONAS.map((p) => {
+                        const active = p.id === persona.id && !agentName.trim();
+                        return (
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPersonaId(p.id);
+                                setAgentName("");
+                              }}
+                              aria-pressed={active}
+                              className="transition-premium flex min-h-11 w-full items-center justify-between gap-4 px-1 text-left hover:bg-hover"
+                            >
+                              <span
+                                className={cn(
+                                  "text-[0.9375rem]",
+                                  active ? "font-medium text-ink" : "text-ink-2",
+                                )}
+                              >
+                                {p.name}
+                              </span>
+                              <span className="flex items-center gap-3">
+                                <span className="font-mono text-[0.75rem] text-ink-4">
+                                  {p.gender === "female" ? "female voice" : "male voice"}
+                                </span>
+                                {active && <IconCheck size={16} className="text-ink" />}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    <div className="mt-4">
+                      <Input
+                        label="Or type your own name"
+                        name="agent-name"
+                        autoComplete="off"
+                        value={agentName}
+                        onChange={(e) => setAgentName(e.target.value)}
+                        placeholder={persona.name}
+                        hint={`Keeps ${persona.name}'s voice, so the name and the voice still match.`}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </form>
-          </StepFrame>
-        )}
 
-        {step === 3 && (
-          <StepFrame
-            title={`Teach ${agentName || "your FDE"}`}
-            body="Add what a real forward-deployed engineer would study before a customer call."
-          >
-            {!teachMode && (
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {(
-                    [
-                      {
-                        id: "upload" as const,
-                        icon: IconUpload,
-                        label: "Upload files",
-                        hint: "PDFs, docs, markdown",
-                      },
-                      {
-                        id: "paste" as const,
-                        icon: IconFile,
-                        label: "Paste text",
-                        hint: "Specs, pricing, FAQs",
-                      },
-                      {
-                        id: "url" as const,
-                        icon: IconGlobe,
-                        label: "Add a URL",
-                        hint: "Docs site or page",
-                      },
-                      {
-                        id: "mcp" as const,
-                        icon: IconServer,
-                        label: "Connect MCP",
-                        hint: "Live tools and APIs",
-                      },
-                    ] as const
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTeachMode(opt.id)}
-                      className={cn(
-                        "group flex min-h-[84px] flex-col items-start gap-2.5 rounded-2xl border border-border bg-bg-elevated p-4 text-left shadow-sm",
-                        "transition-[background-color,border-color,box-shadow] duration-150",
-                        "hover:border-border-strong hover:bg-bg-hover",
-                        "active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20",
-                      )}
-                    >
-                      <opt.icon className="h-[18px] w-[18px] text-fg-secondary" aria-hidden />
-                      <span>
-                        <span className="block text-[14px] font-medium tracking-[-0.01em] text-fg">
-                          {opt.label}
-                        </span>
-                        <span className="mt-0.5 block text-[12.5px] text-fg-muted">{opt.hint}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {sourcesAdded > 0 && (
-                  <p className="flex items-center gap-2 text-[13.5px] text-fg-secondary">
-                    <IconLink className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
+              <div className="min-h-[2.25rem]">
+                {error && (
+                  <p
+                    role="alert"
+                    className="flex gap-2 pb-3 text-[0.875rem] leading-snug text-critical"
+                  >
+                    <IconAlert size={16} className="mt-px shrink-0" />
                     <span>
-                      {sourcesAdded} source{sourcesAdded === 1 ? "" : "s"} added
+                      {error}{" "}
+                      <button
+                        type="submit"
+                        className="font-medium underline underline-offset-4"
+                      >
+                        Try again
+                      </button>
                     </span>
                   </p>
                 )}
-
-                <PrimaryButton
-                  type="button"
-                  onClick={() => void runLearning()}
-                  disabled={sourcesAdded === 0}
-                >
-                  {sourcesAdded === 0 ? "Add at least one source" : "Train and continue"}
-                </PrimaryButton>
-                <p className="text-center text-[12.5px] text-fg-faint">
-                  You can add more knowledge anytime from the dashboard.
-                </p>
               </div>
-            )}
 
-            {teachMode === "upload" && (
-              <div className="space-y-4">
-                <FileDropzone onFiles={(files) => void addUpload(files)} />
-                <GhostButton type="button" onClick={() => setTeachMode(null)} disabled={busy}>
-                  Back to sources
-                </GhostButton>
-              </div>
-            )}
+              <Button
+                type="submit"
+                size="lg"
+                loading={busy}
+                loadingLabel={`Bringing ${effectiveAgent} online`}
+                className="w-full sm:w-auto"
+                rightIcon={<IconArrowRight size={16} />}
+              >
+                Create {effectiveAgent}
+              </Button>
+            </form>
+          </div>
 
-            {teachMode === "paste" && (
-              <div className="space-y-4">
-                <Field
-                  label="Title"
-                  htmlFor="paste-title"
-                  value={pasteTitle}
-                  onChange={setPasteTitle}
-                  placeholder="Product overview"
-                />
-                <label className="flex w-full flex-col gap-1.5">
-                  <span className="text-[13px] font-medium text-fg-secondary">Content</span>
-                  <textarea
-                    id="paste-content"
-                    value={pasteContent}
-                    onChange={(e) => setPasteContent(e.target.value)}
-                    rows={7}
-                    placeholder="Paste pricing, architecture notes, security FAQ…"
-                    className={fieldClassName("min-h-[140px] resize-y py-3")}
-                    autoFocus
-                  />
-                </label>
-                <div className="flex flex-col gap-2.5 sm:flex-row">
-                  <GhostButton type="button" onClick={() => setTeachMode(null)} disabled={busy}>
-                    Back
-                  </GhostButton>
-                  <PrimaryButton
-                    type="button"
-                    className="sm:flex-1"
-                    loading={busy}
-                    disabled={!pasteContent.trim()}
-                    onClick={() => void addPaste()}
-                  >
-                    Add knowledge
-                  </PrimaryButton>
-                </div>
-              </div>
-            )}
-
-            {teachMode === "url" && (
-              <div className="space-y-4">
-                <Field
-                  label="Documentation URL"
-                  htmlFor="knowledge-url"
-                  value={url}
-                  onChange={setUrl}
-                  placeholder="https://docs.yourcompany.com"
-                  type="url"
-                  autoFocus
-                  autoComplete="url"
-                />
-                <div className="flex flex-col gap-2.5 sm:flex-row">
-                  <GhostButton type="button" onClick={() => setTeachMode(null)} disabled={busy}>
-                    Back
-                  </GhostButton>
-                  <PrimaryButton
-                    type="button"
-                    className="sm:flex-1"
-                    loading={busy}
-                    disabled={!url.trim()}
-                    onClick={() => void addUrl()}
-                  >
-                    Add URL
-                  </PrimaryButton>
-                </div>
-              </div>
-            )}
-
-            {teachMode === "mcp" && (
-              <div className="space-y-4">
-                <Field
-                  label="Server name"
-                  htmlFor="mcp-label"
-                  value={mcpLabel}
-                  onChange={setMcpLabel}
-                  placeholder="Internal platform"
-                  autoFocus
-                />
-                <Field
-                  label="MCP server URL"
-                  htmlFor="mcp-url"
-                  value={mcpUrl}
-                  onChange={setMcpUrl}
-                  placeholder="https://mcp.yourcompany.com"
-                  type="url"
-                  autoComplete="url"
-                />
-                <div className="flex flex-col gap-2.5 sm:flex-row">
-                  <GhostButton type="button" onClick={() => setTeachMode(null)} disabled={busy}>
-                    Back
-                  </GhostButton>
-                  <PrimaryButton
-                    type="button"
-                    className="sm:flex-1"
-                    loading={busy}
-                    disabled={!mcpUrl.trim()}
-                    onClick={() => void addMcp()}
-                  >
-                    Connect MCP
-                  </PrimaryButton>
-                </div>
-              </div>
-            )}
-          </StepFrame>
-        )}
-
-        {step === 4 && (
-          <div className="flex flex-1 flex-col items-center justify-center py-14 text-center">
-            <div
-              className="mb-7 h-10 w-10 animate-spin rounded-full border-2 border-border-strong border-t-fg"
-              aria-hidden
-            />
-            <p className="text-[clamp(1.25rem,4vw,1.5rem)] font-semibold tracking-[-0.03em] text-fg">
-              {LEARNING_STEPS[learningIndex]}
+          <aside className="w-full border-t border-rule pt-8 lg:w-[24rem] lg:shrink-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
+            <p className="text-label">Your share link</p>
+            <p className="mt-2 font-mono text-[0.9375rem] leading-6 break-all text-ink">
+              {previewSlug}.{rootDomain}
             </p>
-            <p className="mt-2.5 max-w-xs text-[14px] leading-relaxed text-fg-muted">
-              Building a durable model of {companyName || "your company"} for{" "}
-              {agentName || "your FDE"}.
+            <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-3">
+              One link is the whole product. Anyone who opens it talks to {effectiveAgent}
+              {"; "}
+              no account, no login.
             </p>
-            <ul className="mt-8 w-full max-w-xs space-y-2 text-left" aria-live="polite">
-              {LEARNING_STEPS.map((s, i) => (
-                <li
-                  key={s}
-                  className={cn(
-                    "flex items-center gap-3 text-[13.5px] tracking-[-0.01em] transition-colors duration-200",
-                    i < learningIndex && "text-fg-faint",
-                    i === learningIndex && "text-fg font-medium",
-                    i > learningIndex && "text-fg-faint/70",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
-                      i < learningIndex && "border-fg/25 text-fg/50",
-                      i === learningIndex && "border-fg/40 text-fg",
-                      i > learningIndex && "border-border-strong text-transparent",
-                    )}
-                    aria-hidden
-                  >
-                    {i < learningIndex ? "✓" : ""}
+
+            <ol className="mt-8 divide-y divide-rule border-t border-rule">
+              {[
+                {
+                  n: "01",
+                  title: "We reserve the link",
+                  body: "If the name is taken we add a number, so this never fails.",
+                },
+                {
+                  n: "02",
+                  title: `${effectiveAgent} comes online`,
+                  body: "Chat and voice, both live the moment the workspace exists.",
+                },
+                {
+                  n: "03",
+                  title: "Knowledge, whenever you like",
+                  body: "Paste a URL now, or add docs, files, and MCP servers later.",
+                },
+              ].map((step) => (
+                <li key={step.n} className="flex gap-4 py-4">
+                  <span className="font-mono text-[0.75rem] tabular-nums text-ink-4">
+                    {step.n}
                   </span>
-                  {s}
+                  <span>
+                    <span className="block text-[0.9375rem] font-medium text-ink">
+                      {step.title}
+                    </span>
+                    <span className="mt-1 block text-[0.875rem] leading-relaxed text-ink-3">
+                      {step.body}
+                    </span>
+                  </span>
                 </li>
               ))}
-            </ul>
-          </div>
-        )}
-
-        {step === 5 && summary && (
-          <StepFrame
-            title={`${agentName} understands ${companyName}`}
-            body="Inferred from your sources. Refine anytime from knowledge in the dashboard."
-          >
-            <div className="overflow-hidden rounded-2xl border border-border bg-bg-elevated shadow-sm">
-              <SummaryRow label="What you sell" value={summary.whatYouSell} />
-              <SummaryRow label="Primary buyers" value={summary.primaryBuyers.join(" · ")} />
-              <SummaryRow label="Core use cases" value={summary.coreUseCases.join(" · ")} />
-              <SummaryRow
-                label="Common objections"
-                value={summary.commonObjections.join(" · ")}
-                last
-              />
-            </div>
-            <PrimaryButton type="button" onClick={() => router.push("/dashboard")}>
-              Open operations
-            </PrimaryButton>
-            <p className="text-center text-[13px] text-fg-muted">
-              Share your public FDE link when you are ready. Prospects can chat or FaceTime{" "}
-              {agentName}.
-            </p>
-          </StepFrame>
-        )}
-      </div>
-    </div>
+            </ol>
+          </aside>
+        </div>
+      )}
+    </main>
   );
 }
 
-function StepFrame({
-  title,
-  body,
-  children,
+function ReadyView({
+  company,
+  rootDomain,
+  knowledge,
+  onRetryKnowledge,
+  headingRef,
 }: {
-  title: string;
-  body: string;
-  children: ReactNode;
+  company: Company;
+  rootDomain: string;
+  knowledge: KnowledgeState;
+  onRetryKnowledge: () => void;
+  headingRef: React.RefObject<HTMLHeadingElement | null>;
 }) {
+  const shareUrl = `https://${company.slug}.${rootDomain}`;
+  const shareLabel = `${company.slug}.${rootDomain}`;
+
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="mb-7 sm:mb-8">
-        <h1 className="text-[clamp(1.65rem,5vw,1.95rem)] font-semibold leading-[1.15] tracking-[-0.035em] text-fg text-balance">
-          {title}
+    <div className="flex flex-1 flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+      <div className="flex-1">
+        <p className="text-label">Ready</p>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mt-3 max-w-[20ch] text-display-l text-ink outline-none"
+        >
+          {company.agentName} is live for {company.name}.
         </h1>
-        <p className="mt-2.5 max-w-[36ch] text-[15px] leading-[1.55] text-fg-muted">{body}</p>
+        <p className="mt-4 max-w-[58ch] text-[1rem] leading-relaxed text-ink-2">
+          Send this link to a prospect. They open it and talk to {company.agentName} in chat
+          or on a call. No account, no invite, nothing to install.
+        </p>
+
+        <div className="mt-8">
+          <p className="text-label">Share link</p>
+          <div className="mt-3 flex flex-col gap-3 border-t border-rule pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <a
+              href={shareUrl}
+              className="transition-premium font-mono text-[clamp(1.125rem,3.4vw,1.75rem)] leading-tight font-medium break-all text-ink underline decoration-rule-strong underline-offset-[6px] hover:decoration-ink"
+            >
+              {shareLabel}
+            </a>
+            <CopyLinkButton value={shareUrl} />
+          </div>
+        </div>
+
+        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href={`/fde/${company.slug}`}
+            className="transition-premium inline-flex h-12 items-center justify-center rounded-[var(--radius-control)] bg-ink px-5 text-[0.9375rem] font-medium text-paper shadow-[var(--elevation-1)] hover:bg-ink-lift active:scale-[0.99]"
+          >
+            Open the prospect view
+          </Link>
+          <Link
+            href="/dashboard"
+            className="transition-premium inline-flex h-12 items-center justify-center rounded-[var(--radius-control)] border border-rule-strong px-5 text-[0.9375rem] font-medium text-ink hover:bg-hover active:scale-[0.99]"
+          >
+            Open operations
+          </Link>
+        </div>
       </div>
-      <div className="space-y-5">{children}</div>
+
+      <aside className="w-full border-t border-rule pt-8 lg:w-[24rem] lg:shrink-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
+        <p className="text-label">Workspace</p>
+        <dl className="mt-3 divide-y divide-rule border-t border-rule">
+          <Row label="Company" value={company.name} />
+          <Row label="Engineer" value={company.agentName} />
+          <Row label="Voice" value={resolvePersona({ agent_name: company.agentName, agent_voice: company.agentVoice, slug: company.slug }).voice} mono />
+          <Row label="Slug" value={company.slug} mono />
+        </dl>
+
+        <p className="text-label mt-8">Knowledge</p>
+        <div className="mt-3 border-t border-rule pt-4">
+          <KnowledgeStatus state={knowledge} onRetry={onRetryKnowledge} />
+        </div>
+      </aside>
     </div>
   );
 }
 
-function fieldClassName(extra?: string) {
-  return cn(
-    "w-full rounded-xl border border-border bg-bg-elevated px-3.5 text-[15px] text-fg",
-    "placeholder:text-fg-faint shadow-sm",
-    "transition-[border-color,box-shadow] duration-150",
-    "hover:border-border-strong",
-    "focus:border-fg/25 focus:outline-none focus:ring-2 focus:ring-fg/10",
-    "disabled:opacity-50",
-    extra,
+function KnowledgeStatus({
+  state,
+  onRetry,
+}: {
+  state: KnowledgeState;
+  onRetry: () => void;
+}) {
+  if (state.status === "reading") {
+    return (
+      <div role="status" aria-live="polite">
+        <div className="skeleton h-3.5 w-3/4" />
+        <div className="skeleton mt-2.5 h-3 w-1/2" />
+        <p className="mt-3 text-[0.875rem] text-ink-3">
+          Reading {state.url}. This keeps going if you move on.
+        </p>
+      </div>
+    );
+  }
+
+  if (state.status === "ready") {
+    return (
+      <div>
+        <p className="flex items-start gap-2 text-[0.9375rem] text-ink">
+          <IconCheck size={16} className="mt-0.5 shrink-0 text-positive" />
+          <span className="min-w-0 break-words">{state.title}</span>
+        </p>
+        <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-3">
+          Read and indexed. Add more from the knowledge page any time.
+        </p>
+        <Link
+          href="/knowledge"
+          className="transition-premium mt-3 inline-block text-[0.875rem] font-medium text-ink underline underline-offset-4"
+        >
+          Add more knowledge
+        </Link>
+      </div>
+    );
+  }
+
+  if (state.status === "failed") {
+    return (
+      <div role="alert">
+        <p className="flex items-start gap-2 text-[0.9375rem] text-critical">
+          <IconAlert size={16} className="mt-0.5 shrink-0" />
+          <span className="min-w-0 break-words">{state.message}</span>
+        </p>
+        <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-3">
+          Your engineer is live either way. Nothing here is blocking.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="transition-premium text-[0.875rem] font-medium text-ink underline underline-offset-4"
+          >
+            Try that link again
+          </button>
+          <Link
+            href="/knowledge"
+            className="transition-premium text-[0.875rem] font-medium text-ink-3 underline underline-offset-4 hover:text-ink"
+          >
+            Paste the text instead
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-[0.9375rem] text-ink">No sources yet.</p>
+      <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-3">
+        Your engineer answers from your company name alone until you teach it. Docs, PDFs, a
+        URL, or an MCP server all work.
+      </p>
+      <Link
+        href="/knowledge"
+        className="transition-premium mt-3 inline-block text-[0.875rem] font-medium text-ink underline underline-offset-4"
+      >
+        Teach it something
+      </Link>
+    </div>
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  autoFocus,
-  autoComplete,
-}: {
-  label: string;
-  htmlFor: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  autoFocus?: boolean;
-  autoComplete?: string;
-}) {
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <label className="flex w-full flex-col gap-1.5" htmlFor={htmlFor}>
-      <span className="text-[13px] font-medium text-fg-secondary">{label}</span>
-      <input
-        id={htmlFor}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        autoComplete={autoComplete}
-        className={fieldClassName("h-11")}
-      />
-    </label>
+    <div className="flex items-baseline justify-between gap-4 py-3">
+      <dt className="text-[0.875rem] text-ink-3">{label}</dt>
+      <dd
+        className={cn(
+          "min-w-0 text-right text-[0.875rem] break-words text-ink",
+          mono && "font-mono text-[0.8125rem]",
+        )}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }
 
-function PrimaryButton({
-  children,
-  className,
-  loading,
-  disabled,
-  type = "button",
-  onClick,
-}: {
-  children: ReactNode;
-  className?: string;
-  loading?: boolean;
-  disabled?: boolean;
-  type?: "button" | "submit";
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={cn(
-        "inline-flex h-11 w-full items-center justify-center rounded-full bg-fg px-6",
-        "text-[14.5px] font-semibold tracking-[-0.01em] text-accent-fg",
-        "transition-[transform,opacity,background-color] duration-150",
-        "hover:bg-fg/90 active:scale-[0.985]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/30 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        "disabled:pointer-events-none disabled:opacity-40",
-        className,
-      )}
-    >
-      {loading ? (
-        <span
-          className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white"
-          aria-hidden
-        />
-      ) : (
-        children
-      )}
-    </button>
-  );
-}
+function CopyLinkButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-function GhostButton({
-  children,
-  onClick,
-  disabled,
-  type = "button",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  type?: "button" | "submit";
-}) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "inline-flex h-11 min-w-[5.5rem] items-center justify-center rounded-full border border-border bg-bg-elevated px-5",
-        "text-[14px] font-medium text-fg-secondary shadow-sm",
-        "transition-[background-color,border-color] duration-150",
-        "hover:border-border-strong hover:bg-bg-hover hover:text-fg",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-        "disabled:opacity-40",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2200);
+    return () => clearTimeout(t);
+  }, [copied]);
 
-function SummaryRow({
-  label,
-  value,
-  last,
-}: {
-  label: string;
-  value: string;
-  last?: boolean;
-}) {
+  async function copy() {
+    setFailed(false);
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+    } catch {
+      // Clipboard access is refused in some browsers and on insecure origins.
+      // Selecting the text is the honest fallback, so say that.
+      setFailed(true);
+    }
+  }
+
   return (
-    <div className={cn("px-4 py-3.5", !last && "border-b border-border")}>
-      <p className="text-[11.5px] font-medium tracking-[-0.01em] text-fg-muted">{label}</p>
-      <p className="mt-1 text-[14px] leading-snug tracking-[-0.01em] text-fg">{value}</p>
+    <div className="flex flex-col items-start gap-1 sm:items-end">
+      <Button
+        variant="secondary"
+        size="md"
+        onClick={() => void copy()}
+        className="min-w-[8.5rem]"
+        leftIcon={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+      >
+        {copied ? "Copied" : "Copy link"}
+      </Button>
+      <p
+        className={cn("text-[0.8125rem] text-ink-3", !failed && "sr-only")}
+        role={failed ? "alert" : undefined}
+      >
+        {failed ? "Your browser blocked the clipboard. Select the link and copy it." : "Ready to share"}
+      </p>
     </div>
   );
 }

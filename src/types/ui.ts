@@ -3,6 +3,11 @@
 export type KnowledgeSourceType = "file" | "paste" | "url" | "mcp";
 export type KnowledgeSourceStatus = "processing" | "ready" | "error";
 
+/**
+ * Note: the database also stores `slack` on messages written by the shared
+ * channel handler. It is not in this union because `Record<Channel, …>` maps in
+ * components owned elsewhere would need updating in the same change.
+ */
 export type Channel = "chat" | "email" | "call" | "system";
 export type MessageRole = "user" | "assistant" | "system";
 
@@ -88,6 +93,12 @@ export interface ProspectMemory {
   painPoints: string[];
   requirements: string[];
   objections: string[];
+  /**
+   * Questions the prospect asked that Atlas could not answer yet. The server has
+   * always computed these and /api/voice/token already sends them; the type just
+   * never exposed them, so the UI could show only four of the five memory fields.
+   */
+  unresolvedQuestions?: string[];
   nextAction: string;
 }
 
@@ -563,7 +574,8 @@ export interface ImplementationRequest {
 export interface TimelineItem {
   id: string;
   type: TimelineItemType;
-  title: string;
+  /** Falls back to the humanized type when the source has no headline. */
+  title?: string;
   summary?: string;
   createdAt: string;
   meta?: Record<string, unknown>;

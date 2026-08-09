@@ -1,12 +1,18 @@
 import { z } from "zod";
 import {
   DEFAULT_DURATION_MINUTES,
+  MAX_DAYS_AHEAD,
   getAvailabilityForDay,
   getMonthAvailability,
+  groupSlotsByPeriod,
 } from "@/lib/server/bookings";
 import { getCompanyBySlug } from "@/lib/server/company-context";
 import { ApiError, errorResponse, jsonOk } from "@/lib/server/errors";
-import { isValidIanaTimeZone } from "@/lib/server/timezone";
+import {
+  currentMonthInZone,
+  isValidIanaTimeZone,
+  todayInZone,
+} from "@/lib/server/timezone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,9 +20,9 @@ export const dynamic = "force-dynamic";
 const Query = z.object({
   slug: z.string().min(1),
   timeZone: z.string().min(1),
-  /** YYYY-MM-DD — day slots */
+  /** YYYY-MM-DD, day slots */
   date: z.string().optional(),
-  /** YYYY-MM — month day markers */
+  /** YYYY-MM, month day markers */
   month: z.string().optional(),
   durationMinutes: z.coerce.number().int().min(15).max(120).optional(),
 });
@@ -39,6 +45,23 @@ export async function GET(req: Request) {
     const company = await getCompanyBySlug(parsed.slug);
     const duration = parsed.durationMinutes ?? DEFAULT_DURATION_MINUTES;
 
+    // "Today" and "this month" are always resolved in the GUEST's zone. A guest
+    // in Auckland must not be shown yesterday because the server is in UTC.
+    const today = todayInZone(parsed.timeZone);
+    const currentMonth = currentMonthInZone(parsed.timeZone);
+    const base = {
+      company: {
+        slug: company.slug,
+        name: company.name,
+        agentName: company.agent_name,
+      },
+      timeZone: parsed.timeZone,
+      durationMinutes: duration,
+      today,
+      currentMonth,
+      maxDaysAhead: MAX_DAYS_AHEAD,
+    };
+
     if (parsed.date) {
       const slots = await getAvailabilityForDay({
         companyId: company.id,
@@ -47,15 +70,10 @@ export async function GET(req: Request) {
         durationMinutes: duration,
       });
       return jsonOk({
-        company: {
-          slug: company.slug,
-          name: company.name,
-          agentName: company.agent_name,
-        },
+        ...base,
         date: parsed.date,
-        timeZone: parsed.timeZone,
-        durationMinutes: duration,
         slots,
+        groups: groupSlotsByPeriod(slots),
       });
     }
 
@@ -66,17 +84,7 @@ export async function GET(req: Request) {
         timeZone: parsed.timeZone,
         durationMinutes: duration,
       });
-      return jsonOk({
-        company: {
-          slug: company.slug,
-          name: company.name,
-          agentName: company.agent_name,
-        },
-        month: parsed.month,
-        timeZone: parsed.timeZone,
-        durationMinutes: duration,
-        days,
-      });
+      return jsonOk({ ...base, month: parsed.month, days });
     }
 
     throw new ApiError("BAD_REQUEST", "Provide date=YYYY-MM-DD or month=YYYY-MM", {

@@ -1,71 +1,199 @@
 @import "tailwindcss";
 
-@theme {
-  /* Premium gallery light — never pure white canvas */
-  --color-bg: #f4f5f6;
-  --color-bg-elevated: #ffffff;
-  --color-bg-surface: #ffffff;
-  --color-bg-hover: #eef0f2;
-  --color-bg-active: #e8eaed;
-  --color-bg-muted: #f8f9fa;
+/* ==========================================================================
+   Grok FDE design tokens. Source of truth: docs/DESIGN.md.
+   Editorial-technical: warm paper, warm ink, one vermilion reserved for LIVE.
 
-  --color-border: #e4e7eb;
-  --color-border-subtle: #eef0f2;
-  --color-border-strong: #d0d5dd;
+   Two naming layers live here on purpose:
+     1. The contract palette (paper / ink / rule / live / positive ...).
+     2. Legacy aliases (bg / fg / border / brand / accent / success ...) that
+        the rest of the app still references. They point at layer 1, so every
+        existing utility class keeps working and restyles coherently.
+        Write NEW code against layer 1.
+   ========================================================================== */
 
-  --color-fg: #0f172a;
-  --color-fg-secondary: #334155;
-  --color-fg-muted: #64748b;
-  --color-fg-faint: #94a3b8;
+/* `static` so every token is emitted even when no utility uses it yet. Other
+   surfaces reference these directly as var(--color-...) and must not depend on
+   whether a matching utility class happens to exist. */
+@theme static {
+  /* ── Ground ─────────────────────────────────────────────────────────── */
+  --color-paper: #fbfaf9;
+  --color-surface: #ffffff;
+  --color-sunken: #f4f2ef;
+  --color-hover: #f0eeeb;
+  --color-active: #e8e5e1;
 
-  /* Ink chrome */
-  --color-accent: #0f172a;
-  --color-accent-fg: #f8fafc;
-  --color-accent-dim: rgba(15, 23, 42, 0.05);
-  --color-accent-border: rgba(15, 23, 42, 0.12);
+  /* ── Ink ────────────────────────────────────────────────────────────── */
+  --color-ink: #13110f;
+  --color-ink-2: #3d3833;
+  --color-ink-3: #6b645c;
+  /* 4.66:1 on paper. The old #9A928A measured 2.94:1 and was unreadable as
+     text, which is what shipped on the homepage step numerals. Every legacy
+     alias pointing here (fg-faint) inherits the fix. */
+  --color-ink-4: #787069;
+  /* Hover state for a solid ink fill: lifts rather than darkens. */
+  --color-ink-lift: #2a2521;
 
-  /* Brand mint — dotted icon language */
-  --color-brand: #10b981;
-  --color-brand-fg: #064e3b;
-  --color-brand-strong: #059669;
-  --color-brand-soft: #68d391;
-  --color-brand-dim: rgba(16, 185, 129, 0.08);
-  --color-brand-border: rgba(16, 185, 129, 0.22);
+  /* ── Rules ──────────────────────────────────────────────────────────── */
+  --color-rule: #e5e1dc;
+  --color-rule-strong: #d2ccc5;
 
-  /* Diagnostic engine */
-  --color-success: #10b981;
-  --color-success-dim: rgba(16, 185, 129, 0.08);
-  --color-info: #3182ce;
-  --color-info-dim: rgba(49, 130, 206, 0.08);
-  --color-warning: #dd6b20;
-  --color-warning-dim: rgba(221, 107, 32, 0.06);
-  --color-danger: #e53e3e;
-  --color-danger-dim: rgba(229, 62, 62, 0.08);
-  --color-call: #3182ce;
+  /* ── Live. Semantic only: speaking, recording, call in progress. ──────
+     FILL ONLY, or large text at 24px and up. It measures 4.37:1 on paper,
+     which clears the 3:1 large-text threshold but NOT the 4.5:1 small-text
+     one. This is a deliberate documented exception: it is the brand's live
+     signal. Use it for a status dot, a recording indicator, or a solid
+     button. If you need live-coloured small text, set the text in ink and
+     put a live dot beside it. */
+  --color-live: #d6401f;
+  --color-live-soft: rgba(214, 64, 31, 0.08);
+  --color-live-rule: rgba(214, 64, 31, 0.22);
 
-  --font-sans: var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-display: var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* ── Status. Always paired with a text label or icon, never color alone. */
+  --color-positive: #15803d;
+  --color-positive-soft: rgba(21, 128, 61, 0.08);
+  --color-positive-rule: rgba(21, 128, 61, 0.22);
+  --color-caution: #a16207;
+  --color-caution-soft: rgba(161, 98, 7, 0.08);
+  --color-caution-rule: rgba(161, 98, 7, 0.22);
+  --color-critical: #b42318;
+  --color-critical-strong: #9c1e14;
+  --color-critical-soft: rgba(180, 35, 24, 0.08);
+  --color-critical-rule: rgba(180, 35, 24, 0.22);
 
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* ── Stage. The only dark surfaces: marketing film + live call. ─────── */
+  --color-stage: #0e0d0c;
+  --color-stage-raise: #1b1917;
+  --color-stage-rule: rgba(255, 255, 255, 0.14);
+  --color-stage-ink: rgba(255, 255, 255, 0.92);
+  --color-stage-ink-2: rgba(255, 255, 255, 0.62);
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
+  /* ── Ink washes, for tinted fills that must stay neutral ────────────── */
+  --color-ink-soft: rgba(19, 17, 15, 0.05);
+  --color-ink-rule: rgba(19, 17, 15, 0.12);
 
-  --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
-  --duration-fast: 150ms;
+  /* ── Text-safe status variants ───────────────────────────────────────
+     positive and caution clear 4.5:1 on paper (4.81 and 4.72), but a status
+     chip sets them on their OWN soft tint, where they drop to 4.33 and 4.27.
+     These are the same hues taken down until the word passes on paper,
+     surface, sunken, and that tint: positive-ink 6.25 on paper and 5.62 on
+     its tint, caution-ink 6.01 and 5.44. Use a `-ink` token when the colour
+     carries text; use the base token for the mark. There is deliberately no
+     `live-ink`: live is fill-only, so live text is set in ink beside a live
+     dot instead. */
+  --color-positive-ink: #146c34;
+  --color-caution-ink: #8a5406;
+  --color-critical-ink: var(--color-critical);
+
+  /* ══ Legacy aliases. Do not use in new code; do not delete. ══════════ */
+  --color-bg: var(--color-paper);
+  --color-bg-elevated: var(--color-surface);
+  --color-bg-surface: var(--color-surface);
+  --color-bg-hover: var(--color-hover);
+  --color-bg-active: var(--color-active);
+  --color-bg-muted: var(--color-sunken);
+
+  --color-border: var(--color-rule);
+  --color-border-subtle: var(--color-rule);
+  --color-border-strong: var(--color-rule-strong);
+
+  --color-fg: var(--color-ink);
+  --color-fg-secondary: var(--color-ink-2);
+  --color-fg-muted: var(--color-ink-3);
+  --color-fg-faint: var(--color-ink-4);
+
+  --color-accent: var(--color-ink);
+  --color-accent-fg: var(--color-paper);
+  --color-accent-dim: var(--color-ink-soft);
+  --color-accent-border: var(--color-ink-rule);
+
+  /* Primary action is solid ink on paper, so "brand" resolves to ink. */
+  --color-brand: var(--color-ink);
+  --color-brand-fg: var(--color-paper);
+  --color-brand-strong: var(--color-ink-lift);
+  --color-brand-soft: var(--color-ink-3);
+  --color-brand-dim: var(--color-ink-soft);
+  --color-brand-border: var(--color-ink-rule);
+
+  /* These legacy names are overwhelmingly used as TEXT colours, so they point
+     at the text-safe variants. The difference is invisible on a fill and the
+     difference on a word is the difference between passing and failing. */
+  --color-success: var(--color-positive-ink);
+  --color-success-dim: var(--color-positive-soft);
+  --color-warning: var(--color-caution-ink);
+  --color-warning-dim: var(--color-caution-soft);
+  --color-danger: var(--color-critical);
+  --color-danger-dim: var(--color-critical-soft);
+  /* "info" marks work in progress; it stays neutral so vermilion stays rare. */
+  --color-info: var(--color-ink-2);
+  --color-info-dim: var(--color-ink-soft);
+  /* "call" is a genuine live surface, so it does get the accent. Same
+     fill-only caveat as --color-live above. */
+  --color-call: var(--color-live);
+
+  /* ── Type ─────────────────────────────────────────────────────────────
+     Geist, as the product originally shipped. One family for everything in
+     the UI; Geist Mono only for genuine machine data. Display and sans are
+     the same face on purpose: difference comes from size and weight. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    sans-serif;
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ── Radii, mapped by ROLE, never by taste ───────────────────────────
+     8px every control, 12px a panel that earns a container, 16px the two
+     floating hero surfaces, 999px avatars and status dots and nothing else.
+     Primitives reference the role token, so this scale changes centrally.
+     A `rounded-full` capsule around text is banned: the mechanical test is
+     that 999px is only legal on a perfect circle holding no text. */
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-hero: 16px;
+  --radius-circle: 999px;
+
+  /* Size-named aliases so the Tailwind rounded-* utilities land on the same
+     three values instead of inventing a fourth. */
+  --radius-xs: var(--radius-control);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-hero);
+  --radius-2xl: var(--radius-hero);
+  --radius-3xl: var(--radius-hero);
+  --radius-4xl: var(--radius-hero);
+  --radius-pill: var(--radius-circle);
+
+  /* ── Elevation. Three steps, and most things are step 0. ────────────── */
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(19, 17, 15, 0.05);
+  --elevation-2: 0 16px 40px rgba(19, 17, 15, 0.1);
+
+  --shadow-2xs: var(--elevation-1);
+  --shadow-xs: var(--elevation-1);
+  --shadow-sm: var(--elevation-1);
+  --shadow-md: var(--elevation-1);
+  --shadow-lg: var(--elevation-2);
+  --shadow-xl: var(--elevation-2);
+  --shadow-2xl: var(--elevation-2);
+
+  /* ── Motion. One curve, three durations. ────────────────────────────── */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 120ms;
+  --duration-surface: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── Shell metrics ──────────────────────────────────────────────────── */
   --sidebar-w: 240px;
   --sidebar-collapsed: 64px;
   --drawer-w: 400px;
+  --measure: 68ch;
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--color-rule);
   }
 
   html {
@@ -76,13 +204,15 @@
   }
 
   body {
-    background: var(--color-bg);
-    color: var(--color-fg);
+    background: var(--color-paper);
+    color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
     min-height: 100dvh;
   }
 
-  /* Company ops shell locks the viewport; marketing must scroll */
+  /* The ops shell locks the viewport; marketing scrolls. */
   html:has(.app-viewport),
   body:has(.app-viewport) {
     height: 100%;
@@ -93,68 +223,30 @@
   body:has(.marketing-root) {
     height: auto;
     overflow: auto;
-    background: #000;
+    background: var(--color-stage);
   }
 
-  .marketing-root {
-    font-feature-settings: "ss01" on, "cv11" on;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .marketing-display {
-    font-family: var(--font-geist-sans), "Plus Jakarta Sans", system-ui, sans-serif;
-    font-weight: 500;
-    letter-spacing: -0.035em;
+  h1,
+  h2,
+  h3,
+  h4 {
     text-wrap: balance;
   }
 
-  .marketing-body {
-    font-family: var(--font-geist-sans), "Plus Jakarta Sans", system-ui, sans-serif;
-    font-weight: 400;
-  }
-
-  /*
-   * Cinematic pan: pure horizontal L→R (then reverse via alternate).
-   * Constant scale — never pulse zoom. No Y drift. Motion lives in the
-   * encoded MP4; this class is only a poster fallback / reduced-motion static.
-   */
-  @keyframes marketing-pan-x {
-    from {
-      transform: scale(1.08) translate3d(3.2%, 0, 0);
-    }
-    to {
-      transform: scale(1.08) translate3d(-3.2%, 0, 0);
-    }
-  }
-
-  .marketing-pan {
-    will-change: transform;
-    transform-origin: center center;
-    /* Only used when video is unavailable; baked pan is preferred */
-    animation: none;
-    transform: scale(1.04);
-  }
-
-  .marketing-pan--css {
-    animation: marketing-pan-x 48s ease-in-out infinite alternate;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .marketing-pan,
-    .marketing-pan--css {
-      animation: none !important;
-      transform: scale(1.04);
-    }
-  }
-
   ::selection {
-    background: var(--color-brand-dim);
-    color: var(--color-fg);
+    background: var(--color-live-rule);
+    color: var(--color-ink);
   }
 
+  /* Never removed. 2px ink ring, 2px offset, everywhere. */
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
+  }
+
+  /* On the two dark stage surfaces the ink ring would vanish, so it inverts. */
+  .on-stage :focus-visible {
+    outline-color: #ffffff;
   }
 
   input,
@@ -162,6 +254,11 @@
   button,
   select {
     font: inherit;
+  }
+
+  [disabled],
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   code,
@@ -178,14 +275,85 @@
   }
 }
 
+/* ── Type scale. One scale, reused everywhere. ────────────────────────── */
 @layer utilities {
-  .text-balance {
+  .text-display-xl {
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 6vw, 4.5rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 0.96;
     text-wrap: balance;
   }
 
+  .text-display-l {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+
+  .text-display-m {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .text-title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+  }
+
+  .text-body-l {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .text-body {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.55;
+  }
+
+  .text-caption {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--color-ink-3);
+  }
+
+  .text-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Body copy never runs wider than a comfortable measure. */
+  .measure {
+    max-width: var(--measure);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ── Surfaces, chrome, helpers ────────────────────────────────────────── */
+@layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-strong) transparent;
+    scrollbar-color: var(--color-rule-strong) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -194,46 +362,67 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--color-border-strong);
-    border-radius: 999px;
+    background: var(--color-rule-strong);
+    border-radius: var(--radius-pill);
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
+  /* Elevation 0: the default. A hairline, not a box shadow. */
   .surface {
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
   }
 
+  /* Elevation 1: sits above paper. */
   .surface-elevated {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--elevation-1);
+  }
+
+  /* Elevation 2: genuinely floats. Modals, popovers, the palette. */
+  .surface-floating {
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--elevation-2);
+  }
+
+  .elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+
+  .elevation-2 {
+    box-shadow: var(--elevation-2);
   }
 
   .hairline {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-rule);
   }
 
+  /*
+   * Full bleed. The app is a workspace, not a blog: it fills the display and
+   * only the side padding changes. Cap the paragraph with `.measure`, never
+   * the page. Do not reintroduce a max-width here.
+   */
   .page-frame {
     width: 100%;
-    max-width: 1120px;
-    margin-inline: auto;
-    padding-inline: 1.25rem;
+    padding-inline: 20px;
   }
 
   @media (min-width: 640px) {
     .page-frame {
-      padding-inline: 2rem;
+      padding-inline: 32px;
     }
   }
 
-  .transition-premium {
-    transition-property: color, background-color, border-color, box-shadow, opacity, transform,
-      width, max-width, padding, margin;
-    transition-duration: var(--duration-fast);
-    transition-timing-function: var(--ease-premium);
+  @media (min-width: 1024px) {
+    .page-frame {
+      padding-inline: 48px;
+    }
   }
 
   .app-viewport {
@@ -242,63 +431,110 @@
     overflow: hidden;
   }
 
+  /* ink-4 is the faint tier and now measures 4.66:1, so a timestamp set in it
+     is genuinely readable rather than merely present. */
   .mono-ts {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: 11px;
     letter-spacing: -0.01em;
-    color: var(--color-fg-faint);
+    color: var(--color-ink-4);
   }
 
+  /* Named properties only. Never transition-all. */
+  .transition-premium {
+    transition-property: color, background-color, border-color, box-shadow, opacity,
+      transform, width, max-width;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .transition-surface {
+    transition-property: opacity, transform, box-shadow;
+    transition-duration: var(--duration-surface);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* Status chips. Color plus a label, never color alone. The text takes the
+     -ink variant because a word on a soft tint is the tightest pair we ship. */
   .diag-success {
-    background: var(--color-success-dim);
-    color: var(--color-success);
-    border-color: rgba(16, 185, 129, 0.22);
-  }
-
-  .diag-info {
-    background: var(--color-info-dim);
-    color: var(--color-info);
-    border-color: rgba(49, 130, 206, 0.22);
+    background: var(--color-positive-soft);
+    color: var(--color-positive-ink);
+    border-color: var(--color-positive-rule);
   }
 
   .diag-warning {
-    background: var(--color-warning-dim);
-    color: var(--color-warning);
-    border-color: rgba(221, 107, 32, 0.2);
+    background: var(--color-caution-soft);
+    color: var(--color-caution-ink);
+    border-color: var(--color-caution-rule);
   }
 
   .diag-danger {
-    background: var(--color-danger-dim);
-    color: var(--color-danger);
-    border-color: rgba(229, 62, 62, 0.2);
+    background: var(--color-critical-soft);
+    color: var(--color-critical-ink);
+    border-color: var(--color-critical-rule);
   }
 
-  .animate-in {
-    animation: fade-up 0.2s var(--ease-premium) both;
+  .diag-info {
+    background: var(--color-sunken);
+    color: var(--color-ink-2);
+    border-color: var(--color-rule-strong);
   }
 
-  .animate-fade {
-    animation: fade 0.15s var(--ease-premium) both;
-  }
-
-  .animate-drawer {
-    animation: drawer-in 0.2s var(--ease-premium) both;
-  }
-
-  .skeleton {
-    background: linear-gradient(
-      90deg,
-      var(--color-bg-hover) 0%,
-      var(--color-bg-active) 50%,
-      var(--color-bg-hover) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-shine 1.4s var(--ease-premium) infinite;
-    border-radius: var(--radius-sm);
+  /* Live is fill-only, so the chip's WORD is ink and the vermilion is carried
+     by the tint and the rule around it. */
+  .diag-live {
+    background: var(--color-live-soft);
+    color: var(--color-ink);
+    border-color: var(--color-live-rule);
   }
 }
 
+/* ── Marketing film surfaces ──────────────────────────────────────────── */
+@layer base {
+  .marketing-root {
+    font-feature-settings: "ss01" on;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .marketing-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .marketing-body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+  }
+
+  /*
+   * Horizontal pan used only as the poster fallback when the encoded MP4 is
+   * unavailable. The real motion is baked into the video.
+   */
+  @keyframes marketing-pan-x {
+    from {
+      transform: scale(1.08) translate3d(3.2%, 0, 0);
+    }
+    to {
+      transform: scale(1.08) translate3d(-3.2%, 0, 0);
+    }
+  }
+
+  .marketing-pan {
+    will-change: transform;
+    transform-origin: center center;
+    animation: none;
+    transform: scale(1.04);
+  }
+
+  .marketing-pan--css {
+    animation: marketing-pan-x 48s var(--ease-out) infinite alternate;
+  }
+}
+
+/* ── Motion. Communicates state change, or it does not exist. ─────────── */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -330,12 +566,35 @@
   }
 }
 
-@keyframes skeleton-shine {
-  0% {
-    background-position: 100% 0;
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -80% 0;
+  }
+}
+
+/* Marks genuinely live state (speaking, running, connecting). Slow and calm,
+   never the stock throb. Gated by prefers-reduced-motion below. */
+@keyframes live-breath {
+  0%,
   100% {
-    background-position: -100% 0;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
   }
 }
 
@@ -349,8 +608,45 @@
   }
 }
 
+@layer utilities {
+  .animate-in {
+    animation: fade-up var(--duration-surface) var(--ease-out) both;
+  }
+
+  .animate-fade {
+    animation: fade var(--duration-fast) var(--ease-out) both;
+  }
+
+  .animate-drawer {
+    animation: drawer-in var(--duration-surface) var(--ease-out) both;
+  }
+
+  .animate-sheet {
+    animation: sheet-up var(--duration-surface) var(--ease-out) both;
+  }
+
+  .animate-pulse-soft {
+    animation: live-breath 2.4s var(--ease-out) infinite;
+  }
+
+  /* Content-shaped loading. Neutral sweep, no color, no throb. */
+  .skeleton {
+    background-color: var(--color-sunken);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(19, 17, 15, 0.045) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: skeleton-sweep 1.6s var(--ease-out) infinite;
+    border-radius: var(--radius-control);
+  }
+}
+
 .wave-bar {
-  animation: wave 1.1s ease-in-out infinite;
+  animation: wave 1.1s var(--ease-out) infinite;
   transform-origin: center bottom;
 }
 
@@ -361,5 +657,20 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .marketing-pan,
+  .marketing-pan--css {
+    animation: none !important;
+    transform: scale(1.04);
+  }
+
+  .skeleton {
+    background-image: none;
+  }
+
+  .wave-bar {
+    transform: scaleY(0.6);
   }
 }

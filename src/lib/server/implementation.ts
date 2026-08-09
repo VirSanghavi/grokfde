@@ -18,6 +18,7 @@ import {
   repoAnalysisUserPrompt,
   repoFilePickUserPrompt,
 } from "@/lib/ai/prompts/repository-analysis";
+import { agentDisplayName } from "@/lib/personas";
 import { getCompanyById } from "./company-context";
 import {
   allValidationsPassed,
@@ -26,6 +27,18 @@ import {
   type ValidationResult,
 } from "./code-validation";
 import { ApiError } from "./errors";
+import {
+  createIssueComment,
+  draftIssueReply,
+  getIssue,
+  getRepository,
+  hasGitHubToken,
+  listIssues,
+  parseRepositoryName,
+  unwrapGitHub,
+  type GitHubIssue,
+  type IssueComment,
+} from "./github";
 import { parseKnowledgeSummary, parseProspectMemory } from "./merge";
 import { getProspectMemory } from "./prospect-context";
 import { filterSafeOperations, normalizeRepoPath } from "./protected-paths";
@@ -162,19 +175,23 @@ async function getPrimaryRepo(workspaceId: string) {
   };
 }
 
-function adapterForRepo(repo: {
+/**
+ * Resolves the adapter and lets it confirm what it is talking to before any
+ * caller reads or writes. For GitHub that means the real default branch is
+ * known, which every safety check depends on.
+ */
+async function adapterForRepo(repo: {
   provider: "demo" | "github";
   repository_name: string;
   default_branch: string;
-  installation_or_connection_metadata_json?: Record<string, unknown>;
-}): RepositoryAdapter {
-  const meta = repo.installation_or_connection_metadata_json || {};
-  return createRepositoryAdapter({
+}): Promise<RepositoryAdapter> {
+  const adapter = createRepositoryAdapter({
     provider: repo.provider,
     repositoryName: repo.repository_name,
     defaultBranch: repo.default_branch,
-    githubToken: (meta.token as string | undefined) || null,
   });
+  await adapter.ready();
+  return adapter;
 }
 
 async function readSelectedFiles(
@@ -423,19 +440,60 @@ export async function POST(req: Request) {
 
 // ─── Connect repository ────────────────────────────────────────────
 
+/**
+ * Connecting a real repository verifies it before storing anything: the repo
+ * has to exist, the token has to be able to push to it, and GitHub tells us the
+ * true default branch. A connection that cannot produce a pull request later is
+ * a connection that should fail now, loudly.
+ *
+ * No token is ever accepted from, or stored for, a client. The server token in
+ * GITHUB_TOKEN is the only credential.
+ */
 export async function connectRepository(args: {
   workspaceId: string;
   provider: "demo" | "github";
   repository?: string;
   repositoryUrl?: string;
   defaultBranch?: string;
-  token?: string;
 }) {
   const ws = await getWorkspace(args.workspaceId);
   const db = getSupabaseAdmin();
-  const repositoryName =
-    args.repository ||
-    (args.provider === "demo" ? "globex/platform" : args.repositoryUrl || "unknown/repo");
+
+  let repositoryName =
+    args.repository || (args.provider === "demo" ? "globex/platform" : args.repositoryUrl || "");
+  let repositoryUrl = args.repositoryUrl ?? null;
+  let defaultBranch = args.defaultBranch || "main";
+  let metadata: Record<string, unknown> = { mode: "offline-fixture" };
+
+  if (args.provider === "github") {
+    if (!hasGitHubToken()) {
+      throw new ApiError(
+        "UNAUTHORIZED",
+        "The server has no GITHUB_TOKEN, so it cannot connect a real repository. Add GITHUB_TOKEN to .env.local.",
+        { status: 401, recoverable: false },
+      );
+    }
+    const ref = unwrapGitHub(parseRepositoryName(repositoryName));
+    const repo = unwrapGitHub(await getRepository(ref));
+    if (!repo.canPush) {
+      throw new ApiError(
+        "UNAUTHORIZED",
+        `The connected token cannot push to ${repo.fullName}, so Grok FDE could never open a pull request there.`,
+        { status: 403, recoverable: false },
+      );
+    }
+    repositoryName = repo.fullName;
+    repositoryUrl = repo.htmlUrl;
+    defaultBranch = repo.defaultBranch;
+    metadata = {
+      mode: "real",
+      private: repo.private,
+      htmlUrl: repo.htmlUrl,
+      language: repo.language,
+      openIssues: repo.openIssues,
+      connectedAt: new Date().toISOString(),
+    };
+  }
 
   const { data, error } = await db
     .from("repository_connections")
@@ -443,14 +501,10 @@ export async function connectRepository(args: {
       workspace_id: ws.id,
       provider: args.provider,
       repository_name: repositoryName,
-      repository_url: args.repositoryUrl ?? null,
-      default_branch: args.defaultBranch || "main",
+      repository_url: repositoryUrl,
+      default_branch: defaultBranch,
       status: "connected",
-      installation_or_connection_metadata_json: {
-        // Never return token to clients
-        hasToken: Boolean(args.token || process.env.GITHUB_TOKEN),
-        ...(args.token ? { token: args.token } : {}),
-      },
+      installation_or_connection_metadata_json: metadata,
     })
     .select("id, workspace_id, provider, repository_name, repository_url, default_branch, status, created_at")
     .single();
@@ -465,16 +519,20 @@ export async function connectRepository(args: {
   const events = pushEvent(
     ws.events_json,
     "repository_connected",
-    `Connected ${args.provider} repository ${repositoryName}`,
+    args.provider === "github"
+      ? `Connected ${repositoryName} on GitHub, default branch ${defaultBranch}`
+      : `Connected the offline sample repository ${repositoryName}`,
   );
   await updateWorkspace(ws.id, { status: "connected", events_json: events });
 
   return {
-    id: data.id,
-    repositoryName: data.repository_name,
-    defaultBranch: data.default_branch,
-    provider: data.provider,
-    status: data.status,
+    id: data.id as string,
+    repositoryName: data.repository_name as string,
+    repositoryUrl: data.repository_url as string | null,
+    defaultBranch: data.default_branch as string,
+    provider: data.provider as "demo" | "github",
+    status: data.status as string,
+    mode: (metadata.mode as "real" | "offline-fixture") ?? "offline-fixture",
   };
 }
 
@@ -486,7 +544,7 @@ export async function analyzeWorkspace(workspaceId: string) {
   const prospect = await loadProspect(ws.prospect_id);
   const memory = getProspectMemory(prospect);
   const repo = await getPrimaryRepo(workspaceId);
-  const adapter = adapterForRepo(repo);
+  const adapter = await adapterForRepo(repo);
 
   let events = pushEvent(ws.events_json, "repository_analyzing", "Inspecting repository structure");
   ws = await updateWorkspace(ws.id, { status: "analyzing", events_json: events });
@@ -653,7 +711,7 @@ export async function createImplementationPlan(args: {
   const prospect = await loadProspect(ws.prospect_id);
   const memory = getProspectMemory(prospect);
   const repo = await getPrimaryRepo(args.workspaceId);
-  const adapter = adapterForRepo(repo);
+  const adapter = await adapterForRepo(repo);
   const objective =
     args.objective ||
     "Integrate Grok FDE into this customer's app so technical prospects can chat with an AI FDE.";
@@ -790,7 +848,7 @@ export async function startBuild(args: {
   const company = await getCompanyById(ws.company_id);
   const prospect = await loadProspect(ws.prospect_id);
   const repo = await getPrimaryRepo(args.workspaceId);
-  const adapter = adapterForRepo(repo);
+  const adapter = await adapterForRepo(repo);
   const planJson = planRow.plan_json as z.infer<typeof PlanSchema> & {
     objective?: string;
   };
@@ -800,13 +858,19 @@ export async function startBuild(args: {
     (prospect.company_name || "customer")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
       .slice(0, 24) || "customer";
-  const branchName = `grok-fde/${short}-integration`;
+  // The plan suffix keeps one branch per approved plan: rebuilding the same
+  // plan updates its branch, while a new plan gets a branch of its own.
+  const branchName = `grok-fde/${short}-${String(planRow.id).slice(0, 8)}`;
 
   let runEvents: WorkspaceEvent[] = [
     {
       type: "implementation_started",
-      label: "Build started from approved plan",
+      label:
+        adapter.mode === "real"
+          ? `Build started on ${adapter.repositoryName}, branching from ${adapter.defaultBranch}`
+          : "Build started against the offline sample repository",
       at: new Date().toISOString(),
     },
   ];
@@ -819,7 +883,12 @@ export async function startBuild(args: {
       status: "building",
       branch_name: branchName,
       events_json: runEvents,
-      summary_json: { objective },
+      summary_json: {
+        objective,
+        mode: adapter.mode,
+        repository: adapter.repositoryName,
+        defaultBranch: adapter.defaultBranch,
+      },
     })
     .select("*")
     .single();
@@ -841,8 +910,8 @@ export async function startBuild(args: {
     events_json: pushEvent(ws.events_json, "implementation_started", "Building integration"),
   });
 
-  // Create branch
-  await adapter.createBranch(branchName, repo.default_branch || "main");
+  // Branch from the provider's real default branch, never from a stored guess.
+  await adapter.createBranch(branchName, adapter.defaultBranch);
 
   // Context files from plan
   const planPaths = (planJson.changes || []).map((c) => c.path);
@@ -1154,6 +1223,21 @@ export async function startBuild(args: {
   }
 
   const diffs = await adapter.getDiff(branchName);
+
+  // On a real repository, GitHub's own patch is the truth about what landed on
+  // the branch. Replace the locally computed diff with it so the reviewer reads
+  // the same hunks the pull request will show.
+  if (adapter.mode === "real") {
+    for (const d of diffs) {
+      if (!d.diff) continue;
+      await db
+        .from("implementation_files")
+        .update({ diff: d.diff })
+        .eq("run_id", run.id)
+        .eq("path", d.path);
+    }
+  }
+
   const status = passed ? "ready_for_review" : "failed";
 
   await db
@@ -1167,8 +1251,11 @@ export async function startBuild(args: {
         summary: generated.summary,
         rejectedPaths: rejected,
         validation: passed ? "passed" : "failed",
+        mode: adapter.mode,
+        repository: adapter.repositoryName,
+        defaultBranch: adapter.defaultBranch,
         note: passed
-          ? "Static validation + smoke checks passed (VALIDATED). Full runtime TESTED requires a sandbox runner."
+          ? "Static validation and smoke checks passed (VALIDATED). Full runtime TESTED requires a sandbox runner."
           : "Validation failed after repair attempts",
       },
       diff_summary_json: { files: diffs.length, paths: diffs.map((d) => d.path) },
@@ -1277,47 +1364,181 @@ export async function createPullRequestForRun(runId: string) {
   if (!run) throw new ApiError("NOT_FOUND", "Run not found", { status: 404 });
 
   const repo = await getPrimaryRepo(run.workspace_id as string);
-  const adapter = adapterForRepo(repo);
+  const adapter = await adapterForRepo(repo);
+  const branchName = run.branch_name as string;
+
   const title = "Integrate Grok FDE";
   const body = [
     "## Summary",
     runView.summary,
     "",
-    "## Files",
+    "## Files changed",
     ...runView.files.map((f) => `- \`${f.operation}\` ${f.path}`),
     "",
     "## Validation",
     ...runView.tests.map((t) => `- ${t.status}: ${t.name}`),
     "",
-    "_Prepared by Grok FDE. Human review required before merge._",
+    `Branch \`${branchName}\` targets \`${adapter.defaultBranch}\`. Prepared by the Grok FDE agent.`,
+    "Nothing here merges without a human review.",
   ].join("\n");
 
-  const pr = await adapter.createPullRequest({
-    branchName: run.branch_name as string,
-    title,
-    body,
-  });
+  const pr = await adapter.createPullRequest({ branchName, title, body });
+  const real = pr.status === "ready";
 
   const events = pushEvent(
     run.events_json,
     "pr_ready",
-    `Pull request prepared: ${pr.pullRequestUrl}`,
+    real
+      ? `Pull request #${pr.number} opened: ${pr.pullRequestUrl}`
+      : "Offline sample repository, so no pull request was opened",
   );
 
-  await db
+  // The runs table's status check constraint has no "pr_ready" value, and this
+  // code cannot run DDL. Writing one silently voided the whole update, which
+  // dropped pr_json on the floor and left the UI offering to open a pull
+  // request that already existed. The run stays ready_for_review; the presence
+  // of pr_json is what says a pull request is open.
+  const { error: prErr } = await db
     .from("implementation_runs")
     .update({
-      pr_json: pr,
+      pr_json: { ...pr, mode: adapter.mode, base: adapter.defaultBranch },
       events_json: events,
     })
     .eq("id", runId);
 
+  if (prErr) {
+    throw new ApiError(
+      "INTERNAL_ERROR",
+      `Pull request ${pr.pullRequestUrl} was opened but could not be recorded: ${prErr.message}`,
+      { status: 500 },
+    );
+  }
+
   return {
-    status: pr.status === "simulated" ? "ready" : "ready",
+    status: real ? ("ready" as const) : ("simulated" as const),
     pullRequestUrl: pr.pullRequestUrl,
     branchName: pr.branchName,
+    base: adapter.defaultBranch,
     title: pr.title,
     number: pr.number,
-    simulated: pr.status === "simulated",
+    mode: adapter.mode,
+    simulated: !real,
+  };
+}
+
+// ─── Issue support: read, draft with Grok, post ─────────────────────
+
+/**
+ * Support tickets, but they are GitHub issues on the customer's own repository.
+ * Drafting and posting are deliberately separate calls: a draft is free and
+ * reviewable, a post is public and permanent.
+ */
+export type IssueReplyResult = {
+  repository: string;
+  issue: GitHubIssue;
+  comments: IssueComment[];
+  draft: string;
+  model: string;
+  posted: boolean;
+  commentUrl: string | null;
+};
+
+function requireGitHub(): void {
+  if (!hasGitHubToken()) {
+    throw new ApiError(
+      "UNAUTHORIZED",
+      "The server has no GITHUB_TOKEN, so it cannot read or answer GitHub issues.",
+      { status: 401, recoverable: false },
+    );
+  }
+}
+
+export async function listRepositoryIssues(args: {
+  repository: string;
+  state?: "open" | "closed" | "all";
+}) {
+  requireGitHub();
+  const ref = unwrapGitHub(parseRepositoryName(args.repository));
+  const repo = unwrapGitHub(await getRepository(ref));
+  const issues = unwrapGitHub(await listIssues(ref, { state: args.state ?? "open" }));
+  return {
+    repository: repo.fullName,
+    repositoryUrl: repo.htmlUrl,
+    defaultBranch: repo.defaultBranch,
+    issues,
+  };
+}
+
+export async function answerRepositoryIssue(args: {
+  companyId: string;
+  repository: string;
+  issueNumber: number;
+  /** false drafts only. true posts the comment to GitHub. */
+  post: boolean;
+  /** Optional human-edited body. When present it is posted verbatim. */
+  body?: string;
+}): Promise<IssueReplyResult> {
+  requireGitHub();
+  const company = await getCompanyById(args.companyId);
+  const ref = unwrapGitHub(parseRepositoryName(args.repository));
+  const repo = unwrapGitHub(await getRepository(ref));
+  const { issue, comments } = unwrapGitHub(await getIssue(ref, args.issueNumber));
+
+  let draft = (args.body || "").trim();
+  let model = "human";
+
+  if (!draft) {
+    // Give the agent the shape of the customer's codebase, so the reply can name
+    // real files instead of generic advice.
+    let repoContext = "";
+    try {
+      const adapter = createRepositoryAdapter({
+        provider: "github",
+        repositoryName: repo.fullName,
+        defaultBranch: repo.defaultBranch,
+      });
+      await adapter.ready();
+      const tree = await adapter.listRepositoryFiles();
+      repoContext = treeString(tree);
+    } catch {
+      /* the reply is still useful without the tree */
+    }
+
+    const drafted = unwrapGitHub(
+      await draftIssueReply({
+        repository: repo.fullName,
+        issue,
+        comments,
+        agentName: agentDisplayName(company),
+        vendorName: company.name,
+        vendorKnowledge: vendorSummary(company),
+        repoContext,
+      }),
+    );
+    draft = drafted.body;
+    model = drafted.model;
+  }
+
+  if (!args.post) {
+    return {
+      repository: repo.fullName,
+      issue,
+      comments,
+      draft,
+      model,
+      posted: false,
+      commentUrl: null,
+    };
+  }
+
+  const posted = unwrapGitHub(await createIssueComment(ref, issue.number, draft));
+  return {
+    repository: repo.fullName,
+    issue,
+    comments: [...comments, posted],
+    draft,
+    model,
+    posted: true,
+    commentUrl: posted.htmlUrl,
   };
 }

@@ -1,0 +1,1523 @@
+{
+  "suite": "browser",
+  "baseUrl": "http://localhost:3000",
+  "runId": "qa-msl4g3mf3z60",
+  "totalMs": 44371,
+  "pass": 213,
+  "fail": 3,
+  "skipped": 0,
+  "results": [
+    {
+      "suite": "browser",
+      "name": "/ @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 2139 chars visible",
+      "ms": 3094
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "2110 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - tap targets are at least 44x44",
+      "status": "pass",
+      "detail": "all tap targets >= 44px",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "20 elements sampled",
+      "ms": 23
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "26 text nodes checked, 10 skipped over image backgrounds",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration, allowed: 4 alpha scrim(s) over video; 2 infinite animation(s): marketing-pan-x",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 354
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 2201 chars visible",
+      "ms": 2946
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "2170 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 4
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "20 elements sampled",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "26 text nodes checked, 14 skipped over image backgrounds",
+      "ms": 5
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "full width",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration, allowed: 4 alpha scrim(s) over video; 2 infinite animation(s): marketing-pan-x",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/ @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 313
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 539 chars visible",
+      "ms": 3722
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "530 chars rendered",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - tap targets are at least 44x44",
+      "status": "pass",
+      "detail": "all tap targets >= 44px",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "7 elements sampled",
+      "ms": 5
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "14 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "clean, 2 label-tier caps allowed: \"ASK ATLAS\", \"THINGS WORTH ASKING\"",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 5
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 333
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 568 chars visible",
+      "ms": 5083
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "559 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - focus is visible on interactive elements",
+      "status": "fail",
+      "detail": "1 of 7 sampled element(s) show no visual change on focus: textarea#prompt.min-h-[44px].w-full",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "15 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "full width",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "clean, 2 label-tier caps allowed: \"ASK ATLAS\", \"THINGS WORTH ASKING\"",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/grok-fde @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 274
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 568 chars visible",
+      "ms": 3188
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "559 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - tap targets are at least 44x44",
+      "status": "pass",
+      "detail": "all tap targets >= 44px",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "20 elements sampled",
+      "ms": 41
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "60 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 6
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 858
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 568 chars visible",
+      "ms": 3207
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "559 chars rendered",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 3
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all actionable (React handlers inspected)",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "20 elements sampled",
+      "ms": 27
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "60 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 4
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "full width",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/book/grok-fde @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 487
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 199 chars visible",
+      "ms": 2301
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "188 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - tap targets are at least 44x44",
+      "status": "fail",
+      "detail": "2 interactive element(s) below 44x44: a.flex.items-center \"Grok FDE homeGrok FDE\" (99x24); a.transition-premium.text-[0.875rem] \"Create an account\" (120x22)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "6 elements sampled",
+      "ms": 32
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "9 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 206
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 199 chars visible",
+      "ms": 2175
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "188 chars rendered",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 5
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "6 elements sampled",
+      "ms": 22
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "9 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "single-focus route, no cap",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/login @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 308
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 263 chars visible",
+      "ms": 2226
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "250 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - tap targets are at least 44x44",
+      "status": "fail",
+      "detail": "2 interactive element(s) below 44x44: a.flex.items-center \"Grok FDE homeGrok FDE\" (99x24); a.transition-premium.text-[0.875rem] \"Sign in\" (45x22)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "8 elements sampled",
+      "ms": 30
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "12 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 247
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 263 chars visible",
+      "ms": 2239
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "250 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "8 elements sampled",
+      "ms": 22
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "12 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "single-focus route, no cap",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "no all-caps",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/signup @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 241
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 315 chars visible",
+      "ms": 2476
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "312 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console (2 expected 404 log(s) allowed)",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - no failed network requests",
+      "status": "pass",
+      "detail": "no unexpected failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 375 <= 375",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - tap targets are at least 44x44",
+      "status": "pass",
+      "detail": "all tap targets >= 44px",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "0 elements sampled",
+      "ms": 7
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "5 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "clean, 1 label-tier caps allowed: \"GROK FDE\"",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @mobile - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 243
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - loads",
+      "status": "pass",
+      "detail": "HTTP 200, 315 chars visible",
+      "ms": 3118
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - renders real content, no placeholder leakage",
+      "status": "pass",
+      "detail": "312 chars rendered",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - no console errors or unhandled rejections",
+      "status": "pass",
+      "detail": "clean console (2 expected 404 log(s) allowed)",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - no failed network requests",
+      "status": "pass",
+      "detail": "no unexpected failed requests",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - no horizontal overflow",
+      "status": "pass",
+      "detail": "scrollWidth 1440 <= 1440",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - links and buttons have real destinations",
+      "status": "pass",
+      "detail": "all anchors have destinations",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - images and controls are labelled",
+      "status": "pass",
+      "detail": "all labelled",
+      "ms": 1
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - focus is visible on interactive elements",
+      "status": "pass",
+      "detail": "0 elements sampled",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - text contrast meets 4.5:1",
+      "status": "pass",
+      "detail": "5 text nodes checked, 0 skipped over image backgrounds",
+      "ms": 2
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no pills, only textless circles may be round",
+      "status": "pass",
+      "detail": "no pills",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no page-width cap, the layout is full width",
+      "status": "pass",
+      "detail": "single-focus route, centred measure allowed (721.344px)",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no third typeface",
+      "status": "pass",
+      "detail": "one typeface family",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no shouty all-caps text",
+      "status": "pass",
+      "detail": "clean, 1 label-tier caps allowed: \"GROK FDE\"",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: all color comes through tokens, no hardcoded hex",
+      "status": "pass",
+      "detail": "no hardcoded hex",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no em dashes in visible copy",
+      "status": "pass",
+      "detail": "no em dashes",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - design: no gradients, animate-pulse, or transition-all",
+      "status": "pass",
+      "detail": "no banned decoration",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - no placeholder person name \"Prospect\"",
+      "status": "pass",
+      "detail": "no placeholder names",
+      "ms": 0
+    },
+    {
+      "suite": "browser",
+      "name": "/fde/qa-missing-qa-msl4g3mf3z60 @desktop - axe accessibility scan",
+      "status": "pass",
+      "detail": "no serious violations",
+      "ms": 349
+    }
+  ]
+}

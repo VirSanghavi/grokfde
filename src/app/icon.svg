@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Grok FDE">
+  <!-- Favicon variant. The full mark's inner dots and connectors turn to mud at
+       16px, so this keeps only the four cardinal channels and the live core. -->
+  <rect width="32" height="32" rx="4" fill="#13110F"/>
+  <circle cx="16" cy="5.6" r="2" fill="#FBFAF9"/>
+  <circle cx="26.4" cy="16" r="2" fill="#FBFAF9"/>
+  <circle cx="16" cy="26.4" r="2" fill="#FBFAF9"/>
+  <circle cx="5.6" cy="16" r="2" fill="#FBFAF9"/>
+  <circle cx="16" cy="16" r="5.4" fill="#D6401F"/>
+</svg>

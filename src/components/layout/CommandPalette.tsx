@@ -1,20 +1,23 @@
 "use client";
 
 import {
-  IconAccounts,
   IconActivity,
   IconAgent,
   IconChart,
   IconDashboard,
   IconDeploy,
   IconKnowledge,
-  IconMcp,
   IconSearch,
   IconSettings,
   IconTerminal,
 } from "@/components/icons";
-import { useWorkspace } from "@/components/layout/WorkspaceContext";
+import {
+  useCompanyState,
+  useWorkspace,
+  type CompanyProfile,
+} from "@/components/layout/WorkspaceContext";
 import { cn } from "@/lib/utils";
+
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -25,110 +28,124 @@ import {
   type ComponentType,
 } from "react";
 
-type CommandItem = {
+interface CommandItem {
   id: string;
   label: string;
   hint?: string;
   group: string;
   icon: ComponentType<{ className?: string; size?: number }>;
-  action: () => void;
-};
+  run: () => void;
+}
 
-export function CommandPalette() {
-  const { commandOpen, setCommandOpen, openDrawer, toggleSidebar } = useWorkspace();
+/**
+ * Every command here does something. Nothing opens a panel of state we do not
+ * have, and nothing navigates to an id that only exists in a fixture.
+ */
+export function CommandPalette({ company }: { company: CompanyProfile | null }) {
+  const { commandOpen, setCommandOpen, toggleSidebar, sidebarCollapsed } = useWorkspace();
+  const { state, switchCompany } = useCompanyState();
   const router = useRouter();
+
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const items = useMemo<CommandItem[]>(() => {
-    const nav: CommandItem[] = [
+    const go = (href: string) => () => router.push(href);
+
+    const all: CommandItem[] = [
       {
-        id: "dash",
-        label: "Open Operations Center",
-        hint: "Dashboard",
-        group: "Navigate",
+        id: "dashboard",
+        label: "Control room",
+        hint: company ? `What ${company.agentName} is doing` : undefined,
+        group: "Go to",
         icon: IconDashboard,
-        action: () => router.push("/dashboard"),
+        run: go("/dashboard"),
+      },
+      {
+        id: "conversations",
+        label: "Conversations",
+        hint: "Every thread, one per prospect",
+        group: "Go to",
+        icon: IconActivity,
+        run: go("/conversations"),
       },
       {
         id: "knowledge",
-        label: "Knowledge ingestion",
-        hint: "Sources & vectors",
-        group: "Navigate",
+        label: "Knowledge",
+        hint: company ? `What ${company.agentName} can answer from` : undefined,
+        group: "Go to",
         icon: IconKnowledge,
-        action: () => router.push("/knowledge"),
+        run: go("/knowledge"),
       },
       {
-        id: "activity",
-        label: "Conversations",
-        hint: "Multimodal stream",
-        group: "Navigate",
-        icon: IconActivity,
-        action: () => router.push("/conversations"),
-      },
-      {
-        id: "accounts",
-        label: "Account room",
-        hint: "Globex",
-        group: "Navigate",
-        icon: IconAccounts,
-        action: () => router.push("/accounts/pr_globex"),
-      },
-      {
-        id: "agent",
-        label: "Agent identity",
-        group: "Navigate",
-        icon: IconAgent,
-        action: () => router.push("/agent"),
+        id: "demos",
+        label: "Demos",
+        hint: "Booked calls",
+        group: "Go to",
+        icon: IconDeploy,
+        run: go("/demos"),
       },
       {
         id: "signals",
-        label: "Field signals",
-        group: "Navigate",
+        label: "Signals",
+        hint: "What keeps coming up",
+        group: "Go to",
         icon: IconChart,
-        action: () => router.push("/field-signals"),
+        run: go("/field-signals"),
       },
       {
-        id: "fde",
-        label: "Open prospect FDE",
-        hint: "Talk as prospect",
-        group: "Navigate",
-        icon: IconTerminal,
-        action: () => router.push("/fde/grok-fde"),
+        id: "agent",
+        label: "Agent",
+        hint: company ? `${company.agentName}'s identity and tools` : undefined,
+        group: "Go to",
+        icon: IconAgent,
+        run: go("/agent"),
       },
     ];
 
-    const actions: CommandItem[] = [
-      {
-        id: "toggle-sidebar",
-        label: "Toggle sidebar density",
+    if (company) {
+      all.push(
+        {
+          id: "prospect-link",
+          label: `Open the prospect link`,
+          hint: `/fde/${company.slug}`,
+          group: "Open",
+          icon: IconTerminal,
+          run: go(`/fde/${company.slug}`),
+        },
+        {
+          id: "booking-link",
+          label: "Open the booking page",
+          hint: `/book/${company.slug}`,
+          group: "Open",
+          icon: IconDeploy,
+          run: go(`/book/${company.slug}`),
+        },
+      );
+    }
+
+    all.push({
+      id: "toggle-sidebar",
+      label: sidebarCollapsed ? "Expand the sidebar" : "Collapse the sidebar",
+      group: "Workspace",
+      icon: IconSettings,
+      run: toggleSidebar,
+    });
+
+    if (state.status === "ready" && state.options.length > 1) {
+      all.push({
+        id: "switch-workspace",
+        label: "Switch workspace",
+        hint: `${state.options.length} companies on this browser`,
         group: "Workspace",
         icon: IconSettings,
-        action: () => toggleSidebar(),
-      },
-      {
-        id: "inspect-mcp",
-        label: "Inspect MCP inventory",
-        group: "Workspace",
-        icon: IconMcp,
-        action: () =>
-          openDrawer({
-            title: "MCP State Inspector",
-            subtitle: "Connected tool surface",
-            kind: "mcp",
-          }),
-      },
-      {
-        id: "deploy",
-        label: "Open implementation workspace",
-        group: "Workspace",
-        icon: IconDeploy,
-        action: () => router.push("/conversations"),
-      },
-    ];
+        run: switchCompany,
+      });
+    }
 
-    const all = [...nav, ...actions];
     const q = query.trim().toLowerCase();
     if (!q) return all;
     return all.filter(
@@ -137,128 +154,147 @@ export function CommandPalette() {
         i.hint?.toLowerCase().includes(q) ||
         i.group.toLowerCase().includes(q),
     );
-  }, [query, router, openDrawer, toggleSidebar]);
+  }, [company, query, router, sidebarCollapsed, state, switchCompany, toggleSidebar]);
 
   useEffect(() => {
     setActive(0);
   }, [query, commandOpen]);
 
-  useEffect(() => {
-    if (commandOpen) {
-      setQuery("");
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [commandOpen]);
-
   const run = useCallback(
     (item: CommandItem) => {
       setCommandOpen(false);
-      item.action();
+      item.run();
     },
     [setCommandOpen],
   );
 
+  // ⌘K toggles from anywhere, including when the palette is not mounted.
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
         setCommandOpen(!commandOpen);
-        return;
-      }
-      if (!commandOpen) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setCommandOpen(false);
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActive((i) => Math.min(i + 1, Math.max(0, items.length - 1)));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActive((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter" && items[active]) {
-        e.preventDefault();
-        run(items[active]);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [commandOpen, setCommandOpen, items, active, run]);
+  }, [commandOpen, setCommandOpen]);
+
+  // Focus enters the dialog on open and returns to the trigger on close.
+  useEffect(() => {
+    if (!commandOpen) return;
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    setQuery("");
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+      returnFocusRef.current?.focus?.();
+    };
+  }, [commandOpen]);
 
   if (!commandOpen) return null;
 
-  const groups = Array.from(new Set(items.map((i) => i.group)));
+  const groups = [...new Set(items.map((i) => i.group))];
+
+  function onDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setCommandOpen(false);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((i) => (items.length === 0 ? 0 : (i + 1) % items.length));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((i) => (items.length === 0 ? 0 : (i - 1 + items.length) % items.length));
+    } else if (event.key === "Enter" && items[active]) {
+      event.preventDefault();
+      run(items[active]!);
+    } else if (event.key === "Tab") {
+      // The palette is a single control. Keep focus inside it.
+      event.preventDefault();
+      inputRef.current?.focus();
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[10vh]">
       <button
         type="button"
-        className="absolute inset-0 bg-fg/20 backdrop-blur-sm transition-premium"
-        aria-label="Close command palette"
+        className="absolute inset-0 bg-ink/20"
+        aria-label="Close the command menu"
         onClick={() => setCommandOpen(false)}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
-        className="relative z-10 w-full max-w-xl overflow-hidden rounded-[var(--radius-xl)] border border-border bg-bg-elevated shadow-lg animate-in"
+        aria-label="Command menu"
+        onKeyDown={onDialogKeyDown}
+        className="surface-floating animate-in relative z-10 flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden"
       >
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <IconSearch className="opacity-80" size={18} />
+        <div className="flex shrink-0 items-center gap-3 border-b border-rule px-4 py-3">
+          <IconSearch className="text-ink-3" size={18} />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Switch target, open tools, jump to workspace…"
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-faint"
+            placeholder="Jump to a screen or open a link"
+            aria-label="Search commands"
+            className="min-w-0 flex-1 bg-transparent text-body-l text-ink outline-none placeholder:text-ink-4"
           />
-          <kbd className="mono-ts rounded-md border border-border bg-bg px-1.5 py-0.5">esc</kbd>
+          <kbd className="mono-ts rounded-[var(--radius-xs)] border border-rule px-1.5 py-0.5">
+            esc
+          </kbd>
         </div>
-        <div className="max-h-[min(420px,50vh)] overflow-y-auto scrollbar-thin py-2">
+
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto py-2">
           {items.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-fg-muted">No matching commands</p>
+            <p className="px-4 py-10 text-center text-body text-ink-2">
+              Nothing matches &ldquo;{query.trim()}&rdquo;.
+            </p>
           )}
-          {groups.map((group) => {
-            const groupItems = items.filter((i) => i.group === group);
-            if (!groupItems.length) return null;
-            return (
-              <div key={group} className="mb-1">
-                <p className="mono-ts px-4 py-1.5 uppercase tracking-[0.12em]">{group}</p>
-                {groupItems.map((item) => {
-                  const idx = items.indexOf(item);
+          {groups.map((group) => (
+            <div key={group} className="mb-1">
+              <p className="text-label px-4 py-1.5">{group}</p>
+              {items
+                .filter((i) => i.group === group)
+                .map((item) => {
+                  const index = items.indexOf(item);
                   const Icon = item.icon;
+                  const isActive = index === active;
                   return (
                     <button
                       key={item.id}
                       type="button"
-                      onMouseEnter={() => setActive(idx)}
+                      onMouseEnter={() => setActive(index)}
                       onClick={() => run(item)}
                       className={cn(
-                        "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-premium",
-                        idx === active ? "bg-brand-dim" : "hover:bg-bg-hover",
+                        "transition-premium flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left",
+                        isActive ? "bg-sunken" : "hover:bg-hover",
                       )}
                     >
-                      <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-border bg-bg">
-                        <Icon size={16} />
-                      </span>
+                      <Icon size={16} />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-medium text-fg">{item.label}</span>
+                        <span className="block text-body text-ink">{item.label}</span>
                         {item.hint && (
-                          <span className="block truncate text-xs text-fg-muted">{item.hint}</span>
+                          <span className="mono-ts block truncate">{item.hint}</span>
                         )}
                       </span>
-                      {idx === active && (
-                        <span className="mono-ts text-brand-strong">↵</span>
+                      {isActive && (
+                        <span aria-hidden className="mono-ts">
+                          ↵
+                        </span>
                       )}
                     </button>
                   );
                 })}
-              </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
-        <div className="flex items-center justify-between border-t border-border bg-bg-muted px-4 py-2">
-          <span className="mono-ts">⌘K toggle</span>
-          <span className="mono-ts">↑↓ navigate · ↵ run</span>
+
+        <div className="flex shrink-0 items-center justify-between border-t border-rule bg-sunken px-4 py-2">
+          <span className="mono-ts">⌘K opens and closes</span>
+          <span className="mono-ts">↑↓ move · ↵ run</span>
         </div>
       </div>
     </div>

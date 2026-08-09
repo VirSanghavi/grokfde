@@ -1,4 +1,5 @@
 import {
+  bookingFdePath,
   getBookingByToken,
   joinWindowStatus,
   serializeBooking,
@@ -10,7 +11,7 @@ import { getSupabaseAdmin } from "@/lib/server/supabase-admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Resolve join token → booking + join eligibility */
+/** Resolve join token to booking + join eligibility */
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ token: string }> },
@@ -22,21 +23,17 @@ export async function GET(
       throw new ApiError("NOT_FOUND", "Demo link not found", { status: 404 });
     }
     const company = await getCompanyById(booking.company_id);
-    const window = joinWindowStatus(booking);
     return jsonOk({
       booking: serializeBooking(booking, company),
-      join: window,
-      fdePath:
-        booking.prospect_id
-          ? `/fde/${company.slug}/p/${booking.prospect_id}?call=1&booking=${booking.id}`
-          : `/fde/${company.slug}?call=1&booking=${booking.id}`,
+      join: joinWindowStatus(booking),
+      fdePath: bookingFdePath(booking, company.slug),
     });
   } catch (err) {
     return errorResponse(err);
   }
 }
 
-/** Mark booking completed when guest joins (optional telemetry) */
+/** Record the guest arriving, then hand back where to send them. */
 export async function POST(
   _req: Request,
   ctx: { params: Promise<{ token: string }> },
@@ -66,10 +63,7 @@ export async function POST(
     return jsonOk({
       ok: true,
       booking: serializeBooking(booking, company),
-      fdePath:
-        booking.prospect_id
-          ? `/fde/${company.slug}/p/${booking.prospect_id}?call=1&booking=${booking.id}`
-          : `/fde/${company.slug}?call=1&booking=${booking.id}`,
+      fdePath: bookingFdePath(booking, company.slug),
     });
   } catch (err) {
     return errorResponse(err);

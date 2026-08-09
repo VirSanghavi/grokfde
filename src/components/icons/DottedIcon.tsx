@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import { useId, type ReactNode } from "react";
 
 /**
- * Grok FDE icon language — industrial halftone / dotted matrix.
- * No solid fills, no single-stroke outline icons.
+ * Grok FDE icon language: industrial halftone, a dotted matrix masked to the
+ * glyph. One density, one dot radius, no mixing of filled and outline forms.
+ *
+ * Every dot draws in `currentColor`, so an icon takes the ink of whatever text
+ * colour it sits in. Never hardcode a colour on these.
  */
 
-const DOT = "#68D391";
-const DOT_DIM = "#48BB78";
+const DOT = "currentColor";
 
 export type IconProps = {
   className?: string;
@@ -17,10 +19,18 @@ export type IconProps = {
   title?: string;
 };
 
+/**
+ * The dot matrix, clipped to a glyph mask.
+ *
+ * The grid covers the whole 20x20 box with a half-step inset so glyph edges are
+ * never cut off, and the dots sit close enough together that a 1.2 unit stroke
+ * always catches a row. That is what keeps these readable at 14px, which is the
+ * smallest size in the scale.
+ */
 function DotField({
   maskId,
-  cols = 7,
-  rows = 7,
+  cols = 13,
+  rows = 13,
   size = 20,
   fade = true,
 }: {
@@ -30,23 +40,25 @@ function DotField({
   size?: number;
   fade?: boolean;
 }) {
-  const cx0 = size / (cols + 1);
-  const cy0 = size / (rows + 1);
-  const r = Math.max(0.55, size * 0.045);
+  const stepX = size / cols;
+  const stepY = size / rows;
+  const r = Math.min(stepX, stepY) * 0.42;
   const dots: ReactNode[] = [];
+
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const nx = cols <= 1 ? 0.5 : x / (cols - 1);
       const ny = rows <= 1 ? 0.5 : y / (rows - 1);
       const edge = Math.max(Math.abs(nx - 0.5), Math.abs(ny - 0.5)) * 2;
-      const opacity = fade ? Math.max(0.18, 1 - edge * 0.85) : 0.9;
+      // A gentle falloff keeps the halftone texture without ghosting the edges.
+      const opacity = fade ? Math.max(0.7, 1 - edge * 0.3) : 1;
       dots.push(
         <circle
           key={`${x}-${y}`}
-          cx={cx0 * (x + 1)}
-          cy={cy0 * (y + 1)}
+          cx={(x + 0.5) * stepX}
+          cy={(y + 0.5) * stepY}
           r={r}
-          fill={opacity > 0.55 ? DOT : DOT_DIM}
+          fill={DOT}
           opacity={opacity}
         />,
       );
@@ -92,14 +104,12 @@ function Dotted({
   size = 20,
   title,
   mask,
-  cols = 8,
-  rows = 8,
-}: IconProps & { mask: (id: string) => ReactNode; cols?: number; rows?: number }) {
+}: IconProps & { mask: (id: string) => ReactNode }) {
   const id = useMaskId("i");
   return (
     <Frame className={className} size={size} title={title}>
       <defs>{mask(id)}</defs>
-      <DotField maskId={id} cols={cols} rows={rows} />
+      <DotField maskId={id} />
     </Frame>
   );
 }
@@ -142,8 +152,6 @@ export function IconActivity(p: IconProps) {
   return (
     <Dotted
       {...p}
-      cols={9}
-      rows={7}
       mask={(id) => (
         <mask id={id}>
           <path
@@ -656,8 +664,6 @@ export function IconPlay(p: IconProps) {
   return (
     <Dotted
       {...p}
-      cols={6}
-      rows={7}
       mask={(id) => (
         <mask id={id}>
           <path d="M7 4.2 L15.8 10 L7 15.8 Z" fill="white" />
@@ -859,19 +865,32 @@ export function IconWrench(p: IconProps) {
   );
 }
 
-export function IconSparkles(p: IconProps) {
+/** "Atlas is producing an artifact": a frame being drawn, not a sparkle. */
+export function IconGenerate(p: IconProps) {
   return (
     <Dotted
       {...p}
       mask={(id) => (
         <mask id={id}>
-          <path d="M10 2.5l1.3 4.2L15.5 8l-4.2 1.3L10 13.5l-1.3-4.2L4.5 8l4.2-1.3z" fill="white" />
-          <path d="M15.2 11.5l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7z" fill="white" />
+          <rect x="2.6" y="2.6" width="14.8" height="14.8" rx="2.6" fill="white" />
+          <rect x="5.2" y="5.2" width="9.6" height="9.6" rx="1.4" fill="black" />
+          <path
+            d="M10 7v6M7 10h6"
+            stroke="white"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+          />
         </mask>
       )}
     />
   );
 }
+
+/**
+ * @deprecated Sparkles are banned by docs/DESIGN.md. This alias exists so
+ * existing imports keep compiling; import `IconGenerate` instead.
+ */
+export const IconSparkles = IconGenerate;
 
 export function IconShield(p: IconProps) {
   return (
@@ -959,7 +978,7 @@ export function IconLoader({ className, size = 20, title }: IconProps) {
           <circle cx="10" cy="10" r="7" stroke="white" strokeWidth="2.2" fill="none" strokeDasharray="28 14" />
         </mask>
       </defs>
-      <DotField maskId={id} cols={8} rows={8} fade={false} />
+      <DotField maskId={id} fade={false} />
     </Frame>
   );
 }
@@ -973,23 +992,26 @@ export function IconStatusDot({
 }) {
   const fill =
     tone === "success"
-      ? "#10B981"
+      ? "var(--color-positive)"
       : tone === "info"
-        ? "#3182CE"
+        ? "var(--color-ink-2)"
         : tone === "warning"
-          ? "#DD6B20"
+          ? "var(--color-caution)"
           : tone === "danger"
-            ? "#E53E3E"
-            : "#94A3B8";
+            ? "var(--color-critical)"
+            : "var(--color-ink-4)";
+  // A signal node, not a halftone cluster. At 10px a dot matrix reads as lint,
+  // so this one glyph is a solid core inside a quiet ring.
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" className={cn("shrink-0", className)} aria-hidden>
-      <circle cx="5" cy="5" r="1.1" fill={fill} opacity="0.95" />
-      <circle cx="3.2" cy="3.4" r="0.7" fill={fill} opacity="0.55" />
-      <circle cx="6.8" cy="3.4" r="0.7" fill={fill} opacity="0.55" />
-      <circle cx="3.2" cy="6.6" r="0.7" fill={fill} opacity="0.55" />
-      <circle cx="6.8" cy="6.6" r="0.7" fill={fill} opacity="0.55" />
-      <circle cx="5" cy="2.4" r="0.55" fill={fill} opacity="0.35" />
-      <circle cx="5" cy="7.6" r="0.55" fill={fill} opacity="0.35" />
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      className={cn("shrink-0", className)}
+      aria-hidden
+    >
+      <circle cx="5" cy="5" r="4.2" fill="none" stroke={fill} strokeWidth="1" opacity="0.24" />
+      <circle cx="5" cy="5" r="2.3" fill={fill} />
     </svg>
   );
 }
@@ -1012,6 +1034,62 @@ export function IconDiamond(p: IconProps) {
 }
 
 /* Aliases matching prior lucide names for easy swap */
+/* ── Time & disclosure. Added for the booking surface. ──────── */
+
+export function IconClock(p: IconProps) {
+  return (
+    <Dotted
+      {...p}
+      mask={(id) => (
+        <mask id={id}>
+          <circle cx="10" cy="10" r="7" stroke="white" strokeWidth="1.8" fill="none" />
+          <path
+            d="M10 5.6v4.7l3.1 1.9"
+            stroke="white"
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </mask>
+      )}
+    />
+  );
+}
+
+function Chevron(p: IconProps & { d: string }) {
+  const { d, ...rest } = p;
+  return (
+    <Dotted
+      {...rest}
+      mask={(id) => (
+        <mask id={id}>
+          <path
+            d={d}
+            stroke="white"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </mask>
+      )}
+    />
+  );
+}
+
+export function IconChevronDown(p: IconProps) {
+  return <Chevron {...p} d="M5.4 7.8 10 12.4l4.6-4.6" />;
+}
+
+export function IconChevronLeft(p: IconProps) {
+  return <Chevron {...p} d="M12.4 5.4 7.8 10l4.6 4.6" />;
+}
+
+export function IconChevronRight(p: IconProps) {
+  return <Chevron {...p} d="M7.6 5.4 12.2 10l-4.6 4.6" />;
+}
+
 export const IconMessageSquare = IconConversations;
 export const IconFileText = IconFile;
 export const IconFileCode2 = IconFileCode;

@@ -1,6 +1,19 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { ApiError } from "./errors";
+import {
+  commitFiles,
+  compareBranches,
+  createBranch as ghCreateBranch,
+  createPullRequest as ghCreatePullRequest,
+  getFileContents,
+  getRepository,
+  getRepositoryTree,
+  hasGitHubToken,
+  parseRepositoryName,
+  unwrapGitHub,
+  type RepoRef,
+} from "./github";
 import { isProtectedPath, normalizeRepoPath } from "./protected-paths";
 
 export type RepoFileEntry = {
@@ -22,10 +35,20 @@ export type PullRequestResult = {
   number?: number;
 };
 
+/**
+ * "real" writes to an actual GitHub repository. "offline-fixture" runs against
+ * the bundled sample codebase and opens nothing. The UI labels the difference
+ * so nobody mistakes a fixture run for a real one.
+ */
+export type RepositoryMode = "real" | "offline-fixture";
+
 export interface RepositoryAdapter {
   provider: "demo" | "github";
+  mode: RepositoryMode;
   repositoryName: string;
   defaultBranch: string;
+  /** Resolves branch and metadata that only the provider knows. No-op offline. */
+  ready(): Promise<void>;
   listRepositoryFiles(prefix?: string): Promise<RepoFileEntry[]>;
   readRepositoryFile(filePath: string): Promise<string>;
   searchRepository(query: string): Promise<Array<{ path: string; line: number; preview: string }>>;
@@ -76,6 +99,7 @@ async function loadFixtureTree(root: string, rel = ""): Promise<Map<string, stri
 
 export class DemoRepositoryAdapter implements RepositoryAdapter {
   provider: "demo" = "demo";
+  mode: RepositoryMode = "offline-fixture";
   repositoryName: string;
   defaultBranch = "main";
   private fixtureRoot: string;
@@ -83,6 +107,10 @@ export class DemoRepositoryAdapter implements RepositoryAdapter {
   constructor(repositoryName = "globex/platform") {
     this.repositoryName = repositoryName;
     this.fixtureRoot = path.join(process.cwd(), "src/lib/fixtures/demo-repo");
+  }
+
+  async ready(): Promise<void> {
+    await this.ensureBase();
   }
 
   private async ensureBase(): Promise<DemoBranchState> {
@@ -224,8 +252,8 @@ export class DemoRepositoryAdapter implements RepositoryAdapter {
     title: string;
     body: string;
   }): Promise<PullRequestResult> {
-    // Simulated PR for demo adapter
-    const slug = this.repositoryName.replace("/", "-");
+    // The fixture has no remote, so there is nothing real to open. Callers
+    // surface this as "offline fixture", never as a pull request that exists.
     return {
       status: "simulated",
       pullRequestUrl: `https://github.com/${this.repositoryName}/pull/demo-${Date.now().toString(36)}`,
@@ -236,194 +264,138 @@ export class DemoRepositoryAdapter implements RepositoryAdapter {
   }
 }
 
-// ─── GitHub adapter (optional, read/write when token present) ───────
+// ─── GitHub adapter (real repository, used whenever a token is present) ──
 
+/**
+ * Every read and write goes through src/lib/server/github.ts, so the two
+ * safety rules (never the default branch, never a protected path) are enforced
+ * by the client itself and cannot be skipped by a caller.
+ *
+ * writeFilesToBranch buffers nothing: it sends every file in a single commit
+ * via the git data API, because a reviewer should see one coherent commit and
+ * not one commit per file.
+ */
 export class GitHubRepositoryAdapter implements RepositoryAdapter {
   provider: "github" = "github";
+  mode: RepositoryMode = "real";
   repositoryName: string;
   defaultBranch: string;
-  private token: string;
-  private owner: string;
-  private repo: string;
+  htmlUrl: string | null = null;
+  private ref: RepoRef;
+  private resolved = false;
 
-  constructor(args: {
-    repositoryName: string;
-    token: string;
-    defaultBranch?: string;
-  }) {
-    this.repositoryName = args.repositoryName;
-    this.token = args.token;
-    this.defaultBranch = args.defaultBranch || "main";
-    const [owner, repo] = args.repositoryName.split("/");
-    if (!owner || !repo) {
-      throw new ApiError("BAD_REQUEST", "repository must be owner/name", { status: 400 });
+  constructor(args: { repositoryName: string; defaultBranch?: string }) {
+    const parsed = parseRepositoryName(args.repositoryName);
+    if (!parsed.ok) {
+      throw new ApiError("BAD_REQUEST", parsed.message, { status: 400 });
     }
-    this.owner = owner;
-    this.repo = repo;
+    this.ref = parsed.data;
+    this.repositoryName = `${parsed.data.owner}/${parsed.data.repo}`;
+    this.defaultBranch = args.defaultBranch || "main";
   }
 
-  private async gh(path: string, init?: RequestInit): Promise<Response> {
-    const res = await fetch(`https://api.github.com${path}`, {
-      ...init,
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${this.token}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json",
-        ...(init?.headers || {}),
-      },
-    });
-    return res;
+  /**
+   * The stored default branch can be stale or simply wrong ("main" on a repo
+   * that still uses "master"). Ask GitHub once, then trust the answer, because
+   * every safety check compares against it.
+   */
+  async ready(): Promise<void> {
+    if (this.resolved) return;
+    const repo = unwrapGitHub(await getRepository(this.ref));
+    this.defaultBranch = repo.defaultBranch;
+    this.htmlUrl = repo.htmlUrl;
+    this.resolved = true;
   }
 
   async listRepositoryFiles(prefix = ""): Promise<RepoFileEntry[]> {
-    // Recursive tree of default branch
-    const refRes = await this.gh(
-      `/repos/${this.owner}/${this.repo}/git/ref/heads/${this.defaultBranch}`,
-    );
-    if (!refRes.ok) {
-      throw new ApiError("MCP_FAILED", "Could not read GitHub ref", {
-        status: 502,
-        details: await refRes.text(),
-      });
-    }
-    const ref = (await refRes.json()) as { object: { sha: string } };
-    const treeRes = await this.gh(
-      `/repos/${this.owner}/${this.repo}/git/trees/${ref.object.sha}?recursive=1`,
-    );
-    if (!treeRes.ok) {
-      throw new ApiError("MCP_FAILED", "Could not list GitHub tree", { status: 502 });
-    }
-    const tree = (await treeRes.json()) as {
-      tree: Array<{ path: string; type: string }>;
-    };
+    await this.ready();
+    const tree = unwrapGitHub(await getRepositoryTree(this.ref, this.defaultBranch));
     const p = normalizeRepoPath(prefix);
-    return (tree.tree || [])
-      .filter((t) => !p || t.path.startsWith(p))
-      .map((t) => ({
-        path: t.path,
-        type: t.type === "tree" ? ("dir" as const) : ("file" as const),
-      }));
+    return tree.entries
+      .filter((e) => !p || e.path === p || e.path.startsWith(`${p}/`))
+      .map((e) => ({ path: e.path, type: e.type }));
   }
 
-  async readRepositoryFile(filePath: string): Promise<string> {
-    const n = normalizeRepoPath(filePath);
-    const res = await this.gh(
-      `/repos/${this.owner}/${this.repo}/contents/${encodeURIComponent(n).replace(/%2F/g, "/")}?ref=${this.defaultBranch}`,
+  async readRepositoryFile(filePath: string, branch?: string): Promise<string> {
+    await this.ready();
+    return unwrapGitHub(
+      await getFileContents(this.ref, filePath, branch || this.defaultBranch),
     );
-    if (!res.ok) {
-      throw new ApiError("NOT_FOUND", `GitHub file not found: ${n}`, { status: 404 });
-    }
-    const data = (await res.json()) as { content?: string; encoding?: string };
-    if (!data.content) return "";
-    return Buffer.from(data.content, "base64").toString("utf8");
   }
 
+  /**
+   * GitHub's code search index lags behind pushes and misses private repos on
+   * some plans, so this reads the tree and greps the files it can fetch. Slower,
+   * but it never silently returns nothing for a repo we just connected.
+   */
   async searchRepository(
     query: string,
   ): Promise<Array<{ path: string; line: number; preview: string }>> {
-    const q = encodeURIComponent(`${query} repo:${this.owner}/${this.repo}`);
-    const res = await this.gh(`/search/code?q=${q}`);
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      items?: Array<{ path: string; text_matches?: Array<{ fragment: string }> }>;
-    };
-    return (data.items || []).slice(0, 20).map((item) => ({
-      path: item.path,
-      line: 1,
-      preview: item.text_matches?.[0]?.fragment?.slice(0, 200) || "",
-    }));
-  }
+    await this.ready();
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    const tree = unwrapGitHub(await getRepositoryTree(this.ref, this.defaultBranch));
+    const candidates = tree.entries
+      .filter((e) => e.type === "file" && (e.size ?? 0) < 200_000)
+      .filter((e) => /\.(ts|tsx|js|jsx|json|md|yml|yaml|py|go|rb|java|sql|env\.example)$/i.test(e.path))
+      .slice(0, 60);
 
-  async createBranch(branchName: string, fromBranch = "main"): Promise<{ branchName: string }> {
-    const refRes = await this.gh(
-      `/repos/${this.owner}/${this.repo}/git/ref/heads/${fromBranch || this.defaultBranch}`,
-    );
-    if (!refRes.ok) {
-      throw new ApiError("MCP_FAILED", "Could not resolve base branch", { status: 502 });
-    }
-    const ref = (await refRes.json()) as { object: { sha: string } };
-    const create = await this.gh(`/repos/${this.owner}/${this.repo}/git/refs`, {
-      method: "POST",
-      body: JSON.stringify({
-        ref: `refs/heads/${branchName}`,
-        sha: ref.object.sha,
-      }),
-    });
-    if (!create.ok && create.status !== 422) {
-      // 422 often means branch exists
-      throw new ApiError("MCP_FAILED", "Could not create branch", {
-        status: 502,
-        details: await create.text(),
+    const hits: Array<{ path: string; line: number; preview: string }> = [];
+    for (const entry of candidates) {
+      if (hits.length >= 40) break;
+      const file = await getFileContents(this.ref, entry.path, this.defaultBranch);
+      if (!file.ok) continue;
+      file.data.split("\n").forEach((line, idx) => {
+        if (hits.length < 40 && line.toLowerCase().includes(q)) {
+          hits.push({ path: entry.path, line: idx + 1, preview: line.trim().slice(0, 200) });
+        }
       });
     }
-    return { branchName };
+    return hits;
+  }
+
+  async createBranch(branchName: string, fromBranch?: string): Promise<{ branchName: string }> {
+    await this.ready();
+    const result = unwrapGitHub(
+      await ghCreateBranch({
+        ref: this.ref,
+        branch: branchName,
+        fromBranch: fromBranch || this.defaultBranch,
+        defaultBranch: this.defaultBranch,
+      }),
+    );
+    return { branchName: result.branch };
   }
 
   async writeFilesToBranch(branchName: string, ops: RepoWriteOp[]): Promise<void> {
-    for (const op of ops) {
-      const n = normalizeRepoPath(op.path);
-      if (op.operation === "delete") {
-        // Get sha then delete
-        const existing = await this.gh(
-          `/repos/${this.owner}/${this.repo}/contents/${n}?ref=${branchName}`,
-        );
-        if (!existing.ok) continue;
-        const meta = (await existing.json()) as { sha: string };
-        await this.gh(`/repos/${this.owner}/${this.repo}/contents/${n}`, {
-          method: "DELETE",
-          body: JSON.stringify({
-            message: `chore: remove ${n} via Grok FDE`,
-            sha: meta.sha,
-            branch: branchName,
-          }),
-        });
-        continue;
-      }
-      let sha: string | undefined;
-      const existing = await this.gh(
-        `/repos/${this.owner}/${this.repo}/contents/${n}?ref=${branchName}`,
-      );
-      if (existing.ok) {
-        sha = ((await existing.json()) as { sha: string }).sha;
-      }
-      const put = await this.gh(`/repos/${this.owner}/${this.repo}/contents/${n}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          message: `feat: ${op.operation} ${n} via Grok FDE`,
-          content: Buffer.from(op.content || "", "utf8").toString("base64"),
-          branch: branchName,
-          ...(sha ? { sha } : {}),
-        }),
-      });
-      if (!put.ok) {
-        throw new ApiError("MCP_FAILED", `Failed to write ${n}`, {
-          status: 502,
-          details: await put.text(),
-        });
-      }
-    }
+    await this.ready();
+    if (!ops.length) return;
+    unwrapGitHub(
+      await commitFiles({
+        ref: this.ref,
+        branch: branchName,
+        defaultBranch: this.defaultBranch,
+        message: commitMessageFor(ops),
+        files: ops.map((op) => ({
+          path: op.path,
+          operation: op.operation,
+          content: op.content,
+        })),
+      }),
+    );
   }
 
   async getDiff(
     branchName: string,
   ): Promise<Array<{ path: string; operation: string; diff: string }>> {
-    const res = await this.gh(
-      `/repos/${this.owner}/${this.repo}/compare/${this.defaultBranch}...${branchName}`,
+    await this.ready();
+    const compared = unwrapGitHub(
+      await compareBranches(this.ref, this.defaultBranch, branchName),
     );
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      files?: Array<{
-        filename: string;
-        status: string;
-        patch?: string;
-      }>;
-    };
-    return (data.files || []).map((f) => ({
-      path: f.filename,
-      operation:
-        f.status === "added" ? "create" : f.status === "removed" ? "delete" : "modify",
-      diff: f.patch || "",
+    return compared.files.map((f) => ({
+      path: f.path,
+      operation: f.operation,
+      diff: f.patch,
     }));
   }
 
@@ -432,48 +404,68 @@ export class GitHubRepositoryAdapter implements RepositoryAdapter {
     title: string;
     body: string;
   }): Promise<PullRequestResult> {
-    const res = await this.gh(`/repos/${this.owner}/${this.repo}/pulls`, {
-      method: "POST",
-      body: JSON.stringify({
-        title: args.title,
+    await this.ready();
+    const pr = unwrapGitHub(
+      await ghCreatePullRequest({
+        ref: this.ref,
         head: args.branchName,
         base: this.defaultBranch,
+        defaultBranch: this.defaultBranch,
+        title: args.title,
         body: args.body,
       }),
-    });
-    if (!res.ok) {
-      throw new ApiError("MCP_FAILED", "Could not create pull request", {
-        status: 502,
-        details: await res.text(),
-      });
-    }
-    const data = (await res.json()) as { html_url: string; number: number };
+    );
     return {
       status: "ready",
-      pullRequestUrl: data.html_url,
-      branchName: args.branchName,
-      title: args.title,
-      number: data.number,
+      pullRequestUrl: pr.htmlUrl,
+      branchName: pr.head,
+      title: pr.title,
+      number: pr.number,
     };
   }
 }
 
+/** One commit, so the message has to describe the whole change set. */
+function commitMessageFor(ops: RepoWriteOp[]): string {
+  const created = ops.filter((o) => o.operation === "create").length;
+  const modified = ops.filter((o) => o.operation === "modify").length;
+  const parts = [
+    created ? `${created} new file${created === 1 ? "" : "s"}` : "",
+    modified ? `${modified} updated file${modified === 1 ? "" : "s"}` : "",
+  ].filter(Boolean);
+  const subject = `Integrate Grok FDE (${parts.join(", ") || `${ops.length} files`})`;
+  const bodyLines = ops
+    .slice(0, 20)
+    .map((o) => `${o.operation === "create" ? "add" : "update"} ${normalizeRepoPath(o.path)}`);
+  return [
+    subject,
+    "",
+    ...bodyLines,
+    "",
+    "Prepared by the Grok FDE agent. Human review required before merge.",
+  ].join("\n");
+}
+
+/**
+ * A GitHub connection with no server token is a configuration error, not a
+ * reason to quietly swap in the fixture. Silently degrading is how a demo ends
+ * up claiming it opened a pull request it never opened.
+ */
 export function createRepositoryAdapter(args: {
   provider: "demo" | "github";
   repositoryName: string;
   defaultBranch?: string;
-  githubToken?: string | null;
 }): RepositoryAdapter {
   if (args.provider === "github") {
-    const token = args.githubToken || process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    if (!token) {
-      // Fall back to demo rather than hard-failing the product
-      console.warn("[repositories] No GITHUB_TOKEN; using demo adapter");
-      return new DemoRepositoryAdapter(args.repositoryName || "globex/platform");
+    if (!hasGitHubToken()) {
+      throw new ApiError(
+        "UNAUTHORIZED",
+        "This workspace is connected to a real GitHub repository but the server has no GITHUB_TOKEN. Add it to .env.local, or connect the offline sample repository instead.",
+        { status: 401, recoverable: false },
+      );
     }
     return new GitHubRepositoryAdapter({
       repositoryName: args.repositoryName,
-      token,
       defaultBranch: args.defaultBranch,
     });
   }

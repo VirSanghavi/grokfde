@@ -5,12 +5,15 @@ import { connectRepository } from "@/lib/server/implementation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * No token field. The server's GITHUB_TOKEN is the only credential, so a client
+ * can never hand us one to store or use.
+ */
 const Schema = z.object({
   provider: z.enum(["demo", "github"]).default("demo"),
   repository: z.string().optional(),
   repositoryUrl: z.string().optional(),
   defaultBranch: z.string().optional(),
-  token: z.string().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -25,19 +28,23 @@ export async function POST(req: Request, ctx: Params) {
       repository: body.repository,
       repositoryUrl: body.repositoryUrl,
       defaultBranch: body.defaultBranch,
-      token: body.token,
     });
     return jsonOk(
       {
         id: repo.id,
         repositoryName: repo.repositoryName,
+        repositoryUrl: repo.repositoryUrl,
         defaultBranch: repo.defaultBranch,
         status: repo.status,
         provider: repo.provider,
+        mode: repo.mode,
         events: [
           {
             type: "repository_connected",
-            label: `Connected ${repo.provider} repository ${repo.repositoryName}`,
+            label:
+              repo.mode === "real"
+                ? `Connected ${repo.repositoryName} on GitHub`
+                : `Connected the offline sample repository ${repo.repositoryName}`,
           },
         ],
       },

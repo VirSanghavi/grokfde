@@ -1,6 +1,12 @@
 import { cn } from "@/lib/utils";
 import type { ImplementationRunStatus, WorkspaceStatus } from "@/types/ui";
 
+/**
+ * Status is a dot plus a word. No pill, no border, no tinted capsule. The dot
+ * is one of the two round things the design contract allows, and the word is
+ * what carries the meaning for anyone who cannot separate the colours.
+ */
+
 const LABELS: Record<string, string> = {
   discovery: "Discovery",
   connected: "Connected",
@@ -14,23 +20,23 @@ const LABELS: Record<string, string> = {
   ready_for_review: "Ready for review",
   failed: "Failed",
   queued: "Queued",
-  pr_ready: "PR ready",
+  pr_ready: "Pull request open",
 };
 
-const TONES: Record<string, string> = {
-  discovery: "border-border bg-bg-hover text-fg-secondary",
-  connected: "border-success/25 bg-success/10 text-success",
-  analyzing: "border-info/25 bg-info/10 text-info",
-  analyzed: "border-brand-border bg-brand-dim text-brand",
-  planning: "border-info/25 bg-info/10 text-info",
-  planned: "border-brand-border bg-brand-dim text-brand",
-  building: "border-call/25 bg-call/10 text-call",
-  testing: "border-warning/25 bg-warning/10 text-warning",
-  repairing: "border-warning/30 bg-warning/15 text-warning",
-  ready_for_review: "border-success/30 bg-success/10 text-success",
-  failed: "border-danger/30 bg-danger/10 text-danger",
-  queued: "border-border bg-bg-hover text-fg-secondary",
-  pr_ready: "border-success/30 bg-success/15 text-success",
+const DOT: Record<string, string> = {
+  discovery: "bg-ink-4",
+  connected: "bg-positive",
+  analyzing: "bg-ink-2",
+  analyzed: "bg-ink",
+  planning: "bg-ink-2",
+  planned: "bg-ink",
+  building: "bg-live",
+  testing: "bg-caution",
+  repairing: "bg-caution",
+  ready_for_review: "bg-positive",
+  failed: "bg-critical",
+  queued: "bg-ink-4",
+  pr_ready: "bg-positive",
 };
 
 export function ImplementationStatus({
@@ -43,26 +49,9 @@ export function ImplementationStatus({
   className?: string;
 }) {
   const label = LABELS[status] || status.replace(/_/g, " ");
-  const tone = TONES[status] || TONES.discovery;
-  const pulse = ["analyzing", "planning", "building", "testing", "repairing", "queued"].includes(
-    status
-  );
-
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border font-medium uppercase tracking-[0.08em]",
-        large ? "px-3.5 py-1.5 text-xs" : "px-2.5 py-1 text-[10px]",
-        tone,
-        className
-      )}
-    >
-      <span
-        className={cn(
-          "h-1.5 w-1.5 rounded-full bg-current",
-          pulse && "animate-pulse-soft"
-        )}
-      />
+    <span className={cn("inline-flex items-center gap-2 text-ink-2", large ? "text-[0.9375rem]" : "text-[0.8125rem]", className)}>
+      <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT[status] || "bg-ink-4")} />
       {label}
     </span>
   );

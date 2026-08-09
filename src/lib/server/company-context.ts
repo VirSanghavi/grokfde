@@ -72,7 +72,16 @@ export async function createCompany(args: {
 export async function getCompanyById(id: string): Promise<CompanyRow> {
   const db = getSupabaseAdmin();
   const { data, error } = await db.from("companies").select("*").eq("id", id).maybeSingle();
-  if (error || !data) {
+  // A database failure is not a missing company. Reporting it as 404 hides outages,
+  // bad credentials, and RLS problems behind a message that sends you looking in the
+  // wrong place.
+  if (error) {
+    throw new ApiError("DATABASE_ERROR", "Could not reach the company database", {
+      status: 503,
+      details: error.message,
+    });
+  }
+  if (!data) {
     throw new ApiError("NOT_FOUND", "Company not found", { status: 404 });
   }
   return data as CompanyRow;
@@ -85,8 +94,16 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyRow> {
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
-  if (error || !data) {
-    throw new ApiError("NOT_FOUND", "Company not found", { status: 404 });
+  if (error) {
+    throw new ApiError("DATABASE_ERROR", "Could not reach the company database", {
+      status: 503,
+      details: error.message,
+    });
+  }
+  if (!data) {
+    throw new ApiError("NOT_FOUND", `No company is published at "${slug}"`, {
+      status: 404,
+    });
   }
   return data as CompanyRow;
 }
