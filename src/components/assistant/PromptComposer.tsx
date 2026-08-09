@@ -23,6 +23,8 @@ type Props = {
   autoFocus?: boolean;
   /** Show video-meet affordance */
   onStartMeet?: () => void;
+  /** Tighter vertical rhythm — used on the overview hero */
+  compact?: boolean;
 };
 
 export function PromptComposer({
@@ -37,6 +39,7 @@ export function PromptComposer({
   className,
   autoFocus,
   onStartMeet,
+  compact,
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -48,8 +51,9 @@ export function PromptComposer({
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, expanded ? 200 : 120)}px`;
-  }, [value, expanded]);
+    const max = compact ? (expanded ? 120 : 72) : expanded ? 200 : 120;
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+  }, [value, expanded, compact]);
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -63,7 +67,13 @@ export function PromptComposer({
       className={cn(
         "rounded-[20px] border border-border bg-bg-elevated shadow-md transition-premium",
         "focus-within:border-border-strong focus-within:shadow-lg",
-        expanded ? "min-h-[120px]" : "min-h-[88px]",
+        compact
+          ? expanded
+            ? "min-h-[92px]"
+            : "min-h-[76px]"
+          : expanded
+            ? "min-h-[120px]"
+            : "min-h-[88px]",
         className,
       )}
       onClick={() => {
@@ -80,12 +90,20 @@ export function PromptComposer({
         }}
         onFocus={() => onExpand?.()}
         onKeyDown={onKeyDown}
-        rows={expanded ? 3 : 2}
+        rows={compact ? 1 : expanded ? 3 : 2}
         placeholder={placeholder}
-        className="w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-relaxed text-fg outline-none placeholder:text-fg-faint"
+        className={cn(
+          "w-full resize-none bg-transparent text-[15px] leading-relaxed text-fg outline-none placeholder:text-fg-faint",
+          compact ? "px-4 pt-3" : "px-5 pt-4",
+        )}
         disabled={loading}
       />
-      <div className="flex items-center justify-between gap-2 px-3 pb-3">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 px-3",
+          compact ? "pb-2.5" : "pb-3",
+        )}
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {footerLeft ?? (
             <>
@@ -118,11 +136,13 @@ export function PromptComposer({
           }}
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-premium",
-            value.trim() && !loading
-              ? "bg-brand text-brand-fg shadow-sm hover:bg-brand-strong"
-              : "bg-bg-hover text-fg-faint",
+            loading
+              ? "bg-brand text-brand-fg shadow-sm"
+              : value.trim()
+                ? "bg-brand text-brand-fg shadow-sm hover:bg-brand-strong"
+                : "bg-bg-hover text-fg-faint",
           )}
-          aria-label="Send"
+          aria-label={loading ? "Working" : "Send"}
         >
           {loading ? (
             <IconLoader size={16} className="animate-spin" />

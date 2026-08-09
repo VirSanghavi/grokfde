@@ -293,35 +293,21 @@ export const api = {
   /** Start an internal FDE work thread (company user ↔ Atlas). */
   async createThread(input?: { title?: string; companyName?: string }) {
     if (isMockMode()) {
-      const company = await mock.mockGetCompany();
-      const session = await mock.mockEnsureProspectSession(
-        company.slug,
-        undefined,
-      );
-      // Tag preview with title when provided
+      const session = await mock.mockCreateThread(input?.title);
+      // Ask the question straight away so the thread opens on the real exchange.
       if (input?.title) {
-        await mock.mockSendMessage(
-          session.conversation.id,
-          input.title.startsWith("Thread:")
-            ? input.title
-            : `Let's work on: ${input.title}`,
-        );
+        await mock.mockSendMessage(session.conversation.id, input.title);
         const refreshed = await mock.mockGetConversation(session.conversation.id);
         if (refreshed) {
           return {
-            company,
+            company: session.company,
             conversation: refreshed.conversation,
             prospect: refreshed.prospect,
             messages: refreshed.messages,
           };
         }
       }
-      return {
-        company,
-        conversation: session.conversation,
-        prospect: session.prospect,
-        messages: session.messages,
-      };
+      return session;
     }
 
     const company = await this.getCompany();
@@ -340,12 +326,7 @@ export const api = {
     const prospect = mapProspect(session.prospect);
     let messages: Message[] = [];
     if (input?.title) {
-      await this.sendMessage(
-        conversation.id,
-        input.title.startsWith("Thread:")
-          ? input.title
-          : `Let's work on: ${input.title}`,
-      );
+      await this.sendMessage(conversation.id, input.title);
     }
     const detail = await this.getConversation(conversation.id);
     if (detail) messages = detail.messages;
