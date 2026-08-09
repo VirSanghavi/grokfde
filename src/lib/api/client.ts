@@ -65,6 +65,32 @@ async function realFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Shapes the chat payload returned by both the plain and streaming endpoints. */
+function mapChatResponse(
+  conversationId: string,
+  data: Record<string, unknown>,
+): ChatMessageResponse {
+  const msg = (data.message ?? {}) as {
+    id?: string;
+    content?: string;
+    createdAt?: string;
+  };
+  const events = (data.events ?? []) as ChatMessageResponse["events"];
+  return {
+    message: {
+      id: msg.id ?? `msg_${Date.now()}`,
+      conversationId,
+      channel: "chat",
+      role: "assistant",
+      content: msg.content ?? "",
+      createdAt: msg.createdAt ?? new Date().toISOString(),
+      events: events as Message["events"],
+    },
+    prospect: mapMemoryFromChat((data.prospect ?? {}) as Record<string, unknown>),
+    events,
+  };
+}
+
 function requireCompanyId(): string {
   const id = getStoredCompanyId();
   if (!id) throw new Error("No company yet. Complete onboarding first.");
@@ -418,6 +444,94 @@ export const api = {
       events: data.events as ChatMessageResponse["events"],
     };
     return response;
+  },
+
+  /**
+   * Same turn as sendMessage, but text arrives incrementally.
+   *
+   * `onDelta` fires per chunk with the accumulated text so far. Resolves with
+   * the settled response once the server has persisted the message. Mock mode
+   * has no server to stream from, so it replays the canned reply at a readable
+   * pace rather than pretending nothing streams.
+   */
+  async sendMessageStreaming(
+    conversationId: string,
+    message: string,
+    onDelta: (accumulated: string) => void,
+  ): Promise<ChatMessageResponse> {
+    if (isMockMode()) {
+      const res = await mock.mockSendMessage(conversationId, message);
+      const words = res.message.content.split(/(\s+)/);
+      let acc = "";
+      for (const word of words) {
+        acc += word;
+        onDelta(acc);
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      return res;
+    }
+
+    const companyId = getStoredCompanyId();
+    const res = await fetch(`/api/conversations/${conversationId}/message/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(companyId ? { "X-Company-Id": companyId } : {}),
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok || !res.body) {
+      // Streaming unavailable — fall back so the reply still lands.
+      return this.sendMessage(conversationId, message);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let accumulated = "";
+    let settled: ChatMessageResponse | null = null;
+    let failure: string | null = null;
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop() ?? "";
+
+      for (const raw of frames) {
+        let event = "message";
+        let data = "";
+        for (const line of raw.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) data += line.slice(5).trim();
+        }
+        if (!data) continue;
+
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(data) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+
+        if (event === "delta") {
+          accumulated += String(parsed.text ?? "");
+          onDelta(accumulated);
+        } else if (event === "done") {
+          settled = mapChatResponse(conversationId, parsed);
+        } else if (event === "error") {
+          failure = String(parsed.message ?? "Chat failed");
+        }
+      }
+    }
+
+    if (settled) return settled;
+    if (failure) throw new Error(failure);
+    // Stream ended without a settled payload — re-ask rather than lose the turn.
+    return this.sendMessage(conversationId, message);
   },
 
   /**

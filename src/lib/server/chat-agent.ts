@@ -1,4 +1,4 @@
-import { askGrok, askGrokStructured } from "@/lib/ai/grok";
+import { askGrok, askGrokStreaming, askGrokStructured } from "@/lib/ai/grok";
 import { buildFdeSystemPrompt } from "@/lib/ai/prompts/fde";
 import {
   PROSPECT_MEMORY_SYSTEM,
@@ -271,6 +271,15 @@ export async function handleChatMessage(args: {
   message: string;
   channel?: "chat" | "email";
   confirmedWriteTools?: string[];
+  /**
+   * When provided, the reply is streamed and each text chunk is handed over as
+   * it arrives. Everything downstream — persistence, memory extraction,
+   * escalation — is unchanged; only how the prose is fetched differs.
+   *
+   * Skipped when the turn has tools available, since a tool round-trip emits
+   * no prose on the first pass and would show a stalled empty bubble.
+   */
+  onDelta?: (chunk: string) => void;
 }): Promise<ChatResponse> {
   const message = args.message?.trim();
   if (!message) {
@@ -361,11 +370,18 @@ export async function handleChatMessage(args: {
     assistantContent = legalEscalationReply(company.name, company.agent_name);
   } else if (process.env.XAI_API_KEY) {
     try {
-      const result = await askGrok({
+      const canStream =
+        Boolean(args.onDelta) &&
+        !functionTools.length &&
+        !mcpConfigs.length &&
+        !collectionIds?.length &&
+        !knowledgeFileIds.length;
+
+      const askOptions = {
         messages: [
-          { role: "system", content: system },
+          { role: "system" as const, content: system },
           {
-            role: "user",
+            role: "user" as const,
             content:
               message +
               (functionTools.length
@@ -378,7 +394,11 @@ export async function handleChatMessage(args: {
         mcpTools: mcpConfigs,
         functionTools: functionTools.length ? functionTools : undefined,
         temperature: 0.45,
-      });
+      };
+
+      const result = canStream
+        ? await askGrokStreaming(askOptions, args.onDelta!)
+        : await askGrok(askOptions);
 
       assistantContent = result.content;
 
