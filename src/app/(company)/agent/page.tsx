@@ -2,6 +2,7 @@
 
 import { useActiveCompany } from "@/components/layout/WorkspaceContext";
 import { CopyLinkButton } from "@/components/ops/CopyLink";
+import { GitHubConnection } from "@/components/ops/GitHubConnection";
 import { Eyebrow, Note, RowList, Section, StateMark } from "@/components/ops/primitives";
 import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -368,6 +369,13 @@ export default function AgentPage() {
                 </div>
               </li>
             </RowList>
+          </Section>
+
+          <Section
+            title="Repository"
+            note={`Connect it once and ${company.agentName} has it on every chat, every call, and every issue it works.`}
+          >
+            <GitHubConnection companyId={company.id} />
           </Section>
 
           <Section
