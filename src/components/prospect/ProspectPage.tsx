@@ -7,6 +7,7 @@ import { Composer } from "@/components/prospect/Composer";
 import { hasMemoryContent, MemoryPanel } from "@/components/prospect/MemoryPanel";
 import { MessageBubble } from "@/components/prospect/MessageBubble";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import {
   NotPublished,
   PageSkeleton,
@@ -84,6 +85,8 @@ export function ProspectPage({
   const [sending, setSending] = useState(false);
   const [pendingEvents, setPendingEvents] = useState<AgentEvent[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
+  /** Answer text as it streams in, before the persisted message replaces it. */
+  const [streamingText, setStreamingText] = useState<string | null>(null);
 
   const [callOpen, setCallOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -165,7 +168,15 @@ export function ProspectPage({
     setMessages((prev) => [...prev, optimistic]);
 
     try {
-      const res = await api.sendMessage(conversationId, text);
+      const res = await api.sendMessageStreaming(conversationId, text, {
+        onDelta: setStreamingText,
+        onActivity: (event) =>
+          // Same activity can be re-emitted; keep the list stable.
+          setPendingEvents((prev) =>
+            prev.some((e) => e.label === event.label) ? prev : [...prev, event],
+          ),
+      });
+      setStreamingText(null);
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== optimistic.id),
         { ...optimistic, id: `user_${Date.now()}` },
@@ -180,6 +191,7 @@ export function ProspectPage({
       // Put the words back in the box. Losing what someone typed because the
       // network blinked is unforgivable and trivially avoidable.
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setStreamingText(null);
       setInput(text);
       setSendError(
         err instanceof Error
@@ -242,21 +254,19 @@ export function ProspectPage({
   const showMemory = hasMemoryContent(prospect.memory);
   const openers = suggestedOpeners(company);
 
+  // Was a hand-rolled outline button that matched nothing else on the page.
+  // Talking to the engineer is the point of this page, so it takes the same
+  // primary treatment every other primary action in the app uses.
   const callButton = (
-    <button
-      type="button"
+    <Button
+      variant="primary"
+      size="md"
+      className="shrink-0"
       onClick={() => setCallOpen(true)}
-      className={cn(
-        "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] px-5",
-        "border border-rule-strong bg-surface text-[0.9375rem] font-medium text-ink",
-        "transition-colors duration-[120ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-        "hover:bg-hover active:scale-[0.99]",
-        "",
-      )}
+      leftIcon={<IconPhone className="h-4 w-4" aria-hidden />}
     >
-      <IconPhone className="h-4 w-4" aria-hidden />
       Talk to {company.agentName}
-    </button>
+    </Button>
   );
 
   const composer = (
@@ -335,9 +345,31 @@ export function ProspectPage({
                 <MessageBubble key={m.id} message={m} agentName={company.agentName} />
               ))}
 
-              {sending && (
-                <p className="font-mono text-[0.8125rem] text-ink-3">
-                  {company.agentName} is reading {company.name}&rsquo;s documentation
+              {/* The answer as it streams, rendered through the same bubble as
+                  a finished one so nothing shifts when it settles. */}
+              {streamingText !== null && streamingText.length > 0 && (
+                <MessageBubble
+                  message={{
+                    id: "streaming",
+                    conversationId: conversationId ?? "",
+                    channel: "chat",
+                    role: "assistant",
+                    content: streamingText,
+                    createdAt: new Date().toISOString(),
+                  }}
+                  agentName={company.agentName}
+                />
+              )}
+
+              {/* Thinking only until the first token lands. */}
+              {sending && !streamingText && (
+                <p className="flex items-center gap-2 font-mono text-[0.8125rem] text-ink-3">
+                  <span className="flex items-center gap-1" aria-hidden>
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-3 [animation-delay:-320ms] [animation-duration:1.1s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-3 [animation-delay:-160ms] [animation-duration:1.1s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-3 [animation-duration:1.1s]" />
+                  </span>
+                  {company.agentName} is thinking
                 </p>
               )}
               {pendingEvents.length > 0 && <AgentActivity events={pendingEvents} />}
