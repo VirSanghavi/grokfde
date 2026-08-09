@@ -130,6 +130,7 @@ export type CompanyRow = {
   /** Generated agent face, cached per voice. See lib/agent-persona.ts. */
   agent_face_image_url?: string | null;
   agent_face_video_url?: string | null;
+  agent_face_video_request_id?: string | null;
   agent_face_voice?: string | null;
   agent_face_generated_at?: string | null;
   created_at: string;

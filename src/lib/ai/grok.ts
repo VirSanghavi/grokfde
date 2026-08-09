@@ -51,7 +51,7 @@ export function imageModel(): string {
 }
 
 export function videoModel(): string {
-  return process.env.XAI_VIDEO_MODEL || "grok-imagine-video";
+  return process.env.XAI_VIDEO_MODEL || "grok-imagine-video-1.5";
 }
 
 async function sleep(ms: number) {
@@ -616,15 +616,40 @@ export async function generateImage(
   };
 }
 
-export async function generateVideo(
+export type VideoOptions = {
+  /** Image-to-video: animate this still instead of inventing a new subject. */
+  image?: string;
+  /** 1–15 seconds. */
+  duration?: number;
+  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
+  resolution?: "480p" | "720p" | "1080p";
+};
+
+export type VideoJob = {
+  status: "pending" | "done" | "expired" | "failed";
+  url?: string;
+  durationSeconds?: number;
+};
+
+/**
+ * Video generation is asynchronous: this returns a request id, not a video.
+ * Poll it with getVideo(). Generation can take several minutes, so callers
+ * must not block a user-facing request on completion.
+ */
+export async function submitVideo(
   prompt: string,
-): Promise<{ url?: string; raw: unknown }> {
+  opts: VideoOptions = {},
+): Promise<string> {
   const res = await xaiFetch("/videos/generations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: videoModel(),
       prompt,
+      ...(opts.image ? { image: opts.image } : {}),
+      ...(opts.duration ? { duration: opts.duration } : {}),
+      ...(opts.aspectRatio ? { aspect_ratio: opts.aspectRatio } : {}),
+      ...(opts.resolution ? { resolution: opts.resolution } : {}),
     }),
   });
 
@@ -637,12 +662,59 @@ export async function generateVideo(
     });
   }
 
+  const data = (await res.json()) as { request_id?: string };
+  if (!data.request_id) {
+    throw new ApiError("XAI_ERROR", "Video generation returned no request_id", {
+      status: 502,
+      recoverable: true,
+    });
+  }
+  return data.request_id;
+}
+
+/** Check a submitted video job. Returns status "pending" until it is ready. */
+export async function getVideo(requestId: string): Promise<VideoJob> {
+  const res = await xaiFetch(`/videos/${encodeURIComponent(requestId)}`);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ApiError("XAI_ERROR", `Video lookup failed: ${res.status}`, {
+      status: 502,
+      details: text.slice(0, 500),
+      recoverable: true,
+    });
+  }
+
   const data = (await res.json()) as {
-    data?: Array<{ url?: string }>;
-    url?: string;
+    status?: VideoJob["status"];
+    video?: { url?: string; duration?: number };
   };
   return {
-    url: data.data?.[0]?.url ?? data.url,
-    raw: data,
+    status: data.status ?? "pending",
+    url: data.video?.url,
+    durationSeconds: data.video?.duration,
   };
+}
+
+/**
+ * Submit and wait. Only for background work — the default budget is well past
+ * any request timeout. Returns undefined if it is still pending when we give up.
+ */
+export async function generateVideo(
+  prompt: string,
+  opts: VideoOptions & { maxWaitMs?: number; pollMs?: number } = {},
+): Promise<{ url?: string; requestId: string; status: VideoJob["status"] }> {
+  const { maxWaitMs = 240_000, pollMs = 5_000, ...videoOpts } = opts;
+  const requestId = await submitVideo(prompt, videoOpts);
+
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    await sleep(pollMs);
+    const job = await getVideo(requestId);
+    if (job.status === "done") return { url: job.url, requestId, status: job.status };
+    if (job.status === "failed" || job.status === "expired") {
+      return { requestId, status: job.status };
+    }
+  }
+  return { requestId, status: "pending" };
 }
