@@ -31,6 +31,7 @@ export function CallVideoStage({
   attachStream?: MediaStream | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const idleVideoRef = useRef<HTMLVideoElement>(null);
   const [videoFailed, setVideoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -40,14 +41,27 @@ export function CallVideoStage({
 
   const faceImage = media?.faceImageUrl;
   const faceVideo = media?.faceVideoUrl;
+  const idleVideo = media?.idleVideoUrl;
   const streamUrl = media?.streamUrl;
 
-  // Prefer live stream → remote URL → talking clip
+  // Prefer live stream → remote URL → generated loops.
   const activeVideoSrc = !videoFailed
     ? attachStream
       ? null // stream attached via srcObject
-      : streamUrl || (isSpeaking && faceVideo ? faceVideo : faceVideo && status === "connected" ? faceVideo : null)
+      : streamUrl || faceVideo || idleVideo || null
     : null;
+
+  /**
+   * Both loops run continuously and we crossfade opacity between them. Pausing
+   * the hidden one instead would restart it from frame zero on every switch,
+   * which reads as a stutter each time she starts or stops talking.
+   *
+   * Falls back gracefully: with only one clip generated, that clip covers both
+   * states rather than leaving the stage frozen.
+   */
+  const talkSrc = streamUrl ? null : faceVideo ?? idleVideo ?? null;
+  const idleSrc = streamUrl ? null : idleVideo ?? faceVideo ?? null;
+  const showTalking = isSpeaking || !idleSrc;
 
   useEffect(() => {
     const el = videoRef.current;
@@ -63,28 +77,29 @@ export function CallVideoStage({
     }
 
     el.srcObject = null;
-    if (activeVideoSrc) {
-      el.src = activeVideoSrc;
-      el.loop = !streamUrl;
+    if (talkSrc) {
+      if (el.getAttribute("src") !== talkSrc) el.src = talkSrc;
+      el.loop = true;
+      el.muted = true;
+      void el.play().catch(() => undefined);
+    } else if (streamUrl) {
+      el.src = streamUrl;
       el.muted = true;
       void el.play().catch(() => undefined);
     } else {
       el.removeAttribute("src");
       el.load();
     }
-  }, [attachStream, activeVideoSrc, streamUrl, isSpeaking]);
+  }, [attachStream, talkSrc, streamUrl]);
 
-  // When agent stops speaking and we only have a talking clip, freeze on poster
   useEffect(() => {
-    const el = videoRef.current;
-    if (!el || attachStream || streamUrl || !faceVideo) return;
-    if (isSpeaking) {
-      void el.play().catch(() => undefined);
-    } else if (!streamUrl) {
-      // Keep last frame visible; pause talking loop
-      el.pause();
-    }
-  }, [isSpeaking, attachStream, streamUrl, faceVideo]);
+    const el = idleVideoRef.current;
+    if (!el || !idleSrc) return;
+    if (el.getAttribute("src") !== idleSrc) el.src = idleSrc;
+    el.loop = true;
+    el.muted = true;
+    void el.play().catch(() => undefined);
+  }, [idleSrc]);
 
   const showVideo =
     Boolean(attachStream || (activeVideoSrc && !videoFailed)) && status !== "connecting";
@@ -103,15 +118,31 @@ export function CallVideoStage({
         className
       )}
     >
-      {/* Video layer */}
+      {/* Listening loop — underneath, revealed whenever she is not speaking. */}
+      {idleSrc && !attachStream && (
+        <video
+          ref={idleVideoRef}
+          className={cn(
+            "absolute inset-0 h-full w-full object-contain transition-opacity duration-500",
+            showVideo && !showTalking ? "opacity-100" : "opacity-0"
+          )}
+          playsInline
+          autoPlay
+          loop
+          muted
+          poster={faceImage}
+        />
+      )}
+
+      {/* Talking loop, or the live stream when one is attached. */}
       <video
         ref={videoRef}
         className={cn(
           // Live camera streams fill; generated clips are contained so the
           // subject stays whole if the aspect ratio does not match the tile.
-          "absolute inset-0 h-full w-full transition-opacity duration-300",
+          "absolute inset-0 h-full w-full transition-opacity duration-500",
           attachStream ? "object-cover" : "object-contain",
-          showVideo ? "opacity-100" : "opacity-0"
+          showVideo && showTalking ? "opacity-100" : "opacity-0"
         )}
         playsInline
         autoPlay

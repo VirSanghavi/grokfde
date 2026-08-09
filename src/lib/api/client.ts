@@ -425,7 +425,11 @@ export const api = {
    * unavailable (mock mode, no XAI key, quota) — callers fall back to the
    * initials avatar rather than a portrait that contradicts the voice.
    */
-  async getAgentFace(): Promise<{ faceImageUrl?: string; faceVideoUrl?: string }> {
+  async getAgentFace(): Promise<{
+    faceImageUrl?: string;
+    faceVideoUrl?: string;
+    idleVideoUrl?: string;
+  }> {
     if (isMockMode()) return {};
     const companyId = getStoredCompanyId();
     if (!companyId) return {};
@@ -434,9 +438,14 @@ export const api = {
         available?: boolean;
         faceImageUrl?: string;
         faceVideoUrl?: string;
+        idleVideoUrl?: string;
       }>(`/api/assets/agent-face?companyId=${encodeURIComponent(companyId)}`);
       if (!data.available) return {};
-      return { faceImageUrl: data.faceImageUrl, faceVideoUrl: data.faceVideoUrl };
+      return {
+        faceImageUrl: data.faceImageUrl,
+        faceVideoUrl: data.faceVideoUrl,
+        idleVideoUrl: data.idleVideoUrl,
+      };
     } catch {
       return {};
     }

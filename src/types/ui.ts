@@ -183,10 +183,15 @@ export interface CallMedia {
   /** Still portrait used while connecting, idle, or if video fails. */
   faceImageUrl?: string;
   /**
-   * Talking / looping face video (mock asset or Grok Imagine clip).
-   * Played when the agent is speaking if no live stream is attached.
+   * Talking loop, played while the agent is speaking when no live stream is
+   * attached. Not lip-synced — it reads as a person talking, nothing more.
    */
   faceVideoUrl?: string;
+  /**
+   * Listening loop, played while the agent is silent. Without this the stage
+   * freezes on a still between every sentence, which reads as a dropped call.
+   */
+  idleVideoUrl?: string;
   /**
    * Live realtime stream URL (HLS/WebRTC gateway) when Person B wires voice+face.
    * Takes priority over faceVideoUrl when present.
