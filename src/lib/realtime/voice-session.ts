@@ -17,6 +17,8 @@ export type VoiceTranscriptLine = {
   text: string;
   at: string;
   final?: boolean;
+  /** Groups segments of one spoken turn so the UI updates a bubble in place. */
+  turnId?: number;
 };
 
 export type VoiceSessionConfig = {
@@ -32,7 +34,11 @@ export type VoiceSessionConfig = {
     [k: string]: unknown;
   };
   onTranscript?: (line: VoiceTranscriptLine) => void;
-  onTranscriptDelta?: (speaker: "agent" | "prospect", text: string) => void;
+  onTranscriptDelta?: (
+    speaker: "agent" | "prospect",
+    text: string,
+    turnId?: number,
+  ) => void;
   onSpeakingState?: (state: VoiceSpeakingState) => void;
   onActivity?: (event: VoiceActivityEvent) => void;
   onError?: (message: string) => void;
@@ -99,6 +105,16 @@ export class VoiceSession {
   private userBuf = "";
   private lineSeq = 0;
   private mockTimer: number | null = null;
+  /**
+   * Turn ids let the UI update one bubble in place instead of appending a new
+   * message per transcription segment. Server VAD splits a single spoken
+   * sentence into several segments, so without this a sentence arrives as
+   * "So", "So I was", "So I was thinking" as three separate messages.
+   */
+  private userTurn = 0;
+  private agentTurn = 0;
+  /** Scheduled agent audio, tracked so barge-in can cut it off mid-sentence. */
+  private scheduled: AudioBufferSourceNode[] = [];
 
   constructor(cfg: VoiceSessionConfig) {
     this.cfg = cfg;
@@ -181,11 +197,15 @@ export class VoiceSession {
       session: {
         voice: this.cfg.session.voice || "eve",
         instructions: this.cfg.session.instructions || "",
+        // Tuned for barge-in: a lower threshold and shorter silence window mean
+        // she yields quickly when you start talking over her, and does not sit
+        // waiting half a second after you stop.
         turn_detection: this.cfg.session.turn_detection || {
           type: "server_vad",
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500,
+          threshold: 0.4,
+          prefix_padding_ms: 200,
+          silence_duration_ms: 380,
+          interrupt_response: true,
         },
         tools: this.cfg.session.tools || [],
         input_audio_transcription: { model: "whisper-1" },
@@ -272,7 +292,15 @@ export class VoiceSession {
         this.cfg.onActivity?.({ type: "searching_knowledge", label: step.activity });
       }
       this.cfg.onSpeakingState?.(step.speaker === "agent" ? "speaking" : "listening");
-      this.emitFinal(step.speaker, step.text);
+      // Each scripted line is its own turn, so the UI keeps them as separate
+      // bubbles rather than merging them the way it merges VAD segments.
+      if (step.speaker === "agent") this.agentTurn += 1;
+      else this.userTurn += 1;
+      this.emitFinal(
+        step.speaker,
+        step.text,
+        step.speaker === "agent" ? this.agentTurn : this.userTurn,
+      );
       this.mockTimer = window.setTimeout(() => {
         this.cfg.onSpeakingState?.("listening");
         this.mockTimer = window.setTimeout(tick, step.delay);
@@ -337,6 +365,32 @@ export class VoiceSession {
     const start = Math.max(now + 0.02, this.nextPlayTime);
     src.start(start);
     this.nextPlayTime = start + buffer.duration;
+
+    // Keep a handle so stopPlayback() can cut this off if the user talks over it.
+    this.scheduled.push(src);
+    src.onended = () => {
+      this.scheduled = this.scheduled.filter((s) => s !== src);
+    };
+  }
+
+  /**
+   * Drop every buffered chunk of agent audio immediately.
+   *
+   * Audio arrives far faster than realtime and is scheduled ahead on the audio
+   * clock, so several seconds of speech can already be queued. Without this,
+   * interrupting her means talking over a sentence that keeps playing to the
+   * end — she is effectively uninterruptible.
+   */
+  private stopPlayback() {
+    for (const src of this.scheduled) {
+      try {
+        src.stop();
+      } catch {
+        /* already finished */
+      }
+    }
+    this.scheduled = [];
+    this.nextPlayTime = this.playContext?.currentTime ?? 0;
   }
 
   private async handleMessage(raw: unknown) {
@@ -357,7 +411,13 @@ export class VoiceSession {
         break;
 
       case "input_audio_buffer.speech_started":
+        // Barge-in: kill her audio the instant the user starts talking, both
+        // locally (already-queued chunks) and server-side (stop generating).
+        this.stopPlayback();
+        this.send({ type: "response.cancel" });
+        this.send({ type: "output_audio_buffer.clear" });
         this.cfg.onSpeakingState?.("listening");
+        this.userTurn += 1;
         this.userBuf = "";
         break;
 
@@ -369,20 +429,21 @@ export class VoiceSession {
         const delta = String(data.delta ?? data.text ?? "");
         if (delta) {
           this.userBuf += delta;
-          this.cfg.onTranscriptDelta?.("prospect", this.userBuf);
+          this.cfg.onTranscriptDelta?.("prospect", this.userBuf, this.userTurn);
         }
         break;
       }
 
       case "conversation.item.input_audio_transcription.completed": {
         const text = String(data.transcript ?? data.text ?? this.userBuf).trim();
-        if (text) this.emitFinal("prospect", text);
+        if (text) this.emitFinal("prospect", text, this.userTurn);
         this.userBuf = "";
         break;
       }
 
       case "response.created":
         this.cfg.onSpeakingState?.("thinking");
+        this.agentTurn += 1;
         this.agentBuf = "";
         break;
 
@@ -405,7 +466,7 @@ export class VoiceSession {
         const delta = String(data.delta ?? "");
         if (delta) {
           this.agentBuf += delta;
-          this.cfg.onTranscriptDelta?.("agent", this.agentBuf);
+          this.cfg.onTranscriptDelta?.("agent", this.agentBuf, this.agentTurn);
         }
         break;
       }
@@ -413,7 +474,7 @@ export class VoiceSession {
       case "response.output_audio_transcript.done":
       case "response.audio_transcript.done": {
         const text = String(data.transcript ?? this.agentBuf).trim();
-        if (text) this.emitFinal("agent", text);
+        if (text) this.emitFinal("agent", text, this.agentTurn);
         this.agentBuf = "";
         break;
       }
@@ -423,7 +484,7 @@ export class VoiceSession {
         const delta = String(data.delta ?? "");
         if (delta) {
           this.agentBuf += delta;
-          this.cfg.onTranscriptDelta?.("agent", this.agentBuf);
+          this.cfg.onTranscriptDelta?.("agent", this.agentBuf, this.agentTurn);
         }
         break;
       }
@@ -464,7 +525,7 @@ export class VoiceSession {
 
       case "response.done":
         if (this.agentBuf.trim()) {
-          this.emitFinal("agent", this.agentBuf.trim());
+          this.emitFinal("agent", this.agentBuf.trim(), this.agentTurn);
           this.agentBuf = "";
         }
         this.cfg.onSpeakingState?.("listening");
@@ -487,7 +548,7 @@ export class VoiceSession {
     }
   }
 
-  private emitFinal(speaker: "agent" | "prospect", text: string) {
+  private emitFinal(speaker: "agent" | "prospect", text: string, turnId?: number) {
     this.lineSeq += 1;
     this.cfg.onTranscript?.({
       id: `tl_${this.lineSeq}_${Date.now()}`,
@@ -495,6 +556,7 @@ export class VoiceSession {
       text,
       at: new Date().toISOString(),
       final: true,
+      turnId,
     });
   }
 

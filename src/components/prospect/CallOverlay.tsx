@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { api } from "@/lib/api/client";
+import { upsertTurn, type LiveLine } from "@/lib/realtime/transcript";
 import { VoiceSession } from "@/lib/realtime/voice-session";
 import { cn, formatDuration } from "@/lib/utils";
 import type {
@@ -62,6 +63,8 @@ export function CallOverlay({
   const [speakingState, setSpeakingState] = useState<CallSpeakingState>("idle");
   const [showTranscript, setShowTranscript] = useState(true);
   const [caption, setCaption] = useState("");
+  /** In-progress speech, rendered as a single bubble that rewrites in place. */
+  const [live, setLive] = useState<LiveLine | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isMockVoice, setIsMockVoice] = useState(false);
@@ -95,6 +98,7 @@ export function CallOverlay({
     setCamOff(false);
     setSpeakingState("idle");
     setCaption("");
+    setLive(null);
     setError(null);
     setLocalStream(null);
     setIsMockVoice(false);
@@ -162,25 +166,26 @@ export function CallOverlay({
           },
           onTranscript: (line) => {
             if (cancelled) return;
-            const mapped: CallTranscriptLine = {
-              id: line.id,
-              speaker: line.speaker,
-              text: line.text,
-              at: line.at,
-            };
             setTranscript((prev) => {
-              // Replace trailing partial from same speaker if caption was streaming
-              const next = [...prev, mapped];
+              const next = upsertTurn(prev, {
+                id: line.id,
+                speaker: line.speaker,
+                text: line.text,
+                at: line.at,
+                turnId: line.turnId,
+              });
               transcriptRef.current = next;
               return next;
             });
+            // The finalised text supersedes whatever was streaming for this turn.
+            setLive(null);
             setCaption(line.text);
           },
-          onTranscriptDelta: (speaker, text) => {
-            if (!cancelled) {
-              setCaption(text);
-              if (speaker === "agent") setSpeakingState("speaking");
-            }
+          onTranscriptDelta: (speaker, text, turnId) => {
+            if (cancelled) return;
+            setCaption(text);
+            setLive({ speaker, text, turnId });
+            if (speaker === "agent") setSpeakingState("speaking");
           },
           onError: (msg) => {
             if (!cancelled) setError(msg);
@@ -220,7 +225,7 @@ export function CallOverlay({
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [transcript, caption]);
+  }, [transcript, live]);
 
   useEffect(() => {
     sessionRef.current?.setMuted(muted);
@@ -431,17 +436,29 @@ export function CallOverlay({
                       </p>
                     </div>
                   ))}
-                  {caption &&
-                    status === "connected" &&
-                    speakingState === "speaking" &&
-                    transcript[transcript.length - 1]?.text !== caption && (
-                      <div className="rounded-xl bg-bg px-3 py-2 opacity-70">
-                        <p className="text-[11px] font-medium text-call">{agentName}</p>
-                        <p className="mt-0.5 text-[13.5px] leading-relaxed text-fg-muted">
-                          {caption}
-                        </p>
-                      </div>
-                    )}
+                  {/* One in-progress bubble, rewritten in place as words arrive
+                      — for whoever is currently speaking, not just the agent. */}
+                  {live?.text && status === "connected" && (
+                    <div
+                      className={cn(
+                        "rounded-xl px-3 py-2",
+                        live.speaker === "agent" ? "bg-bg" : "bg-brand-dim",
+                      )}
+                    >
+                      <p
+                        className={cn(
+                          "flex items-center gap-1.5 text-[11px] font-medium tracking-[-0.01em]",
+                          live.speaker === "agent" ? "text-call" : "text-fg-muted",
+                        )}
+                      >
+                        {live.speaker === "agent" ? agentName : "You"}
+                        <span className="inline-block h-1 w-1 animate-pulse-soft rounded-full bg-current" />
+                      </p>
+                      <p className="mt-0.5 text-[13.5px] leading-relaxed text-fg-secondary">
+                        {live.text}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Sits in the scroll flow, not pinned to the bottom of an
                       otherwise empty column. */}

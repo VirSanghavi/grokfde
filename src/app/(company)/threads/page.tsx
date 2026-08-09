@@ -14,6 +14,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+/** Fluid page frame — grows with the viewport instead of a narrow column. */
+const FRAME = "mx-auto w-full max-w-[1600px] px-5 sm:px-8 2xl:px-12";
+/** Landing-page pill, translated to the light theme. */
+const PILL_GHOST =
+  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-border-strong bg-bg-elevated px-4 text-[13px] font-medium text-fg transition-premium hover:bg-bg-hover";
+
 export default function ThreadsPage() {
   const router = useRouter();
   const [threads, setThreads] = useState<Conversation[]>([]);
@@ -64,105 +70,140 @@ export default function ThreadsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-bg">
-      <header className="shrink-0 border-b border-border bg-bg-elevated px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="mono-ts uppercase tracking-[0.14em]">Threads</p>
-            <h1 className="text-xl font-semibold tracking-tight text-fg">
-              Conversations with Atlas
-            </h1>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/meet">
-              <Button size="sm" variant="secondary" leftIcon={<IconVideo size={14} />}>
-                Meet
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              loading={creating}
-              onClick={newThread}
-              leftIcon={<IconPlus size={14} />}
-            >
-              New thread
-            </Button>
-          </div>
-        </div>
+      <header className="shrink-0 border-b border-border bg-bg-elevated">
+        <div className={cn(FRAME, "py-8 sm:py-10")}>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-faint">
+                Threads
+              </p>
+              <h1 className="marketing-display mt-1.5 text-[clamp(1.6rem,3.2vw,2.35rem)] font-medium leading-[1.08] tracking-[-0.035em] text-fg">
+                Conversations with Atlas.
+              </h1>
+              <p className="marketing-body mt-2.5 max-w-[34rem] text-[14px] leading-[1.5] text-fg-muted sm:text-[15px]">
+                Chat and video share the same memory. Pick up any thread exactly
+                where it stopped.
+              </p>
+            </div>
 
-        <div className="mx-auto mt-4 max-w-3xl">
-          <label className="flex h-10 items-center gap-2 rounded-full border border-border bg-bg px-3.5">
-            <IconSearch size={16} />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search threads…"
-              className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-faint"
-            />
-          </label>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link href="/meet">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-full! h-10! px-5!"
+                  leftIcon={<IconVideo size={14} />}
+                >
+                  Meet
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                loading={creating}
+                onClick={newThread}
+                className="rounded-full! h-10! px-5!"
+                leftIcon={<IconPlus size={14} />}
+              >
+                New thread
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-border bg-bg px-4 transition-premium focus-within:border-border-strong">
+              <IconSearch size={16} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search threads…"
+                className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-faint"
+              />
+            </label>
+            <p className="mono-ts shrink-0 uppercase tracking-[0.14em] sm:pl-2">
+              {loading
+                ? "Loading…"
+                : `${filtered.length} thread${filtered.length === 1 ? "" : "s"}`}
+            </p>
+          </div>
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-5 py-5 sm:px-8">
-        <div className="mx-auto max-w-3xl">
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+        <div className={cn(FRAME, "py-6 sm:py-8")}>
           {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="skeleton h-16 rounded-[14px]" />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="skeleton h-[168px] rounded-2xl" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-[16px] border border-dashed border-border bg-bg-elevated px-6 py-14 text-center">
-              <IconMessage size={22} className="mx-auto opacity-50" />
-              <p className="mt-3 text-sm font-medium text-fg">No threads yet</p>
-              <p className="mt-1 text-sm text-fg-muted">
-                Start from Overview or create a new thread here.
+            <div className="rounded-3xl border border-dashed border-border-strong bg-bg-elevated px-6 py-20 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-border bg-bg">
+                <IconMessage size={20} />
+              </span>
+              <h2 className="marketing-display mt-5 text-[clamp(1.25rem,2.4vw,1.6rem)] font-medium leading-[1.15] tracking-[-0.03em] text-fg">
+                No threads yet.
+              </h2>
+              <p className="marketing-body mx-auto mt-2 max-w-sm text-[14px] leading-[1.5] text-fg-muted">
+                Start from Overview or open a new thread here. Atlas keeps the
+                context across chat and video.
               </p>
-              <Button className="mt-4" size="sm" onClick={newThread} loading={creating}>
+              <Button
+                className="mt-6 rounded-full! h-11! px-6!"
+                onClick={newThread}
+                loading={creating}
+              >
                 Start a thread
               </Button>
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-[16px] border border-border bg-bg-elevated shadow-sm">
-              {filtered.map((t, i) => {
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filtered.map((t) => {
                 const name =
                   t.prospect?.companyName || t.prospect?.personName || "Thread";
                 return (
-                  <li key={t.id}>
+                  <li
+                    key={t.id}
+                    className="group relative flex flex-col rounded-2xl border border-border bg-bg-elevated p-5 shadow-sm transition-premium hover:border-border-strong hover:shadow-md"
+                  >
                     <Link
                       href={`/threads/${t.id}`}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3.5 transition-premium hover:bg-bg-hover",
-                        i > 0 && "border-t border-border",
-                      )}
-                    >
+                      aria-label={name}
+                      className="absolute inset-0 rounded-2xl"
+                    />
+                    <div className="flex items-start gap-3">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-bg">
                         <IconMessage size={16} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-semibold text-fg">{name}</p>
-                          {t.lastChannel && (
-                            <span className="mono-ts rounded-full border border-border px-1.5 uppercase">
-                              {t.lastChannel}
-                            </span>
-                          )}
-                        </div>
-                        <p className="truncate text-xs text-fg-muted">
-                          {t.lastMessagePreview || "No messages yet"}
+                        <p className="truncate text-[15px] font-semibold tracking-[-0.015em] text-fg">
+                          {name}
                         </p>
+                        {t.lastChannel && (
+                          <span className="mono-ts mt-1 inline-flex rounded-full border border-border px-2 py-0.5 uppercase tracking-[0.12em]">
+                            {t.lastChannel}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <span className="mono-ts">{formatRelativeTime(t.updatedAt)}</span>
-                        <Link
-                          href={`/meet/${t.id}?mode=duo`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-brand hover:text-fg"
-                        >
-                          <IconVideo size={12} />
-                          Meet
-                        </Link>
-                      </div>
-                    </Link>
+                    </div>
+
+                    <p className="mt-4 line-clamp-2 min-h-[2.6em] text-[13.5px] leading-snug text-fg-muted">
+                      {t.lastMessagePreview || "No messages yet"}
+                    </p>
+
+                    <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4">
+                      <span className="mono-ts">
+                        {formatRelativeTime(t.updatedAt)}
+                      </span>
+                      <Link
+                        href={`/meet/${t.id}?mode=duo`}
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(PILL_GHOST, "relative z-10")}
+                      >
+                        <IconVideo size={13} />
+                        Meet
+                      </Link>
+                    </div>
                   </li>
                 );
               })}

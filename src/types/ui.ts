@@ -219,6 +219,8 @@ export interface CallTranscriptLine {
   speaker: "agent" | "prospect";
   text: string;
   at: string;
+  /** Segments of one spoken turn share this, so the UI merges them into one line. */
+  turnId?: number;
 }
 
 export interface Escalation {

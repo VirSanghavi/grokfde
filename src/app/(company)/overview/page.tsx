@@ -142,7 +142,7 @@ export default function OverviewPage() {
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
         {/* Soft dotted wash like the reference, Grok FDE brand */}
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-48 opacity-[0.35]"
+          className="pointer-events-none absolute inset-x-0 top-0 h-64 opacity-[0.35]"
           style={{
             backgroundImage:
               "radial-gradient(circle, var(--color-border-strong) 0.7px, transparent 0.8px)",
@@ -151,19 +151,28 @@ export default function OverviewPage() {
           }}
         />
 
-        <div className="relative mx-auto w-full max-w-5xl px-5 pb-10 pt-10 sm:px-8 sm:pt-12">
+        <div className="relative mx-auto w-full max-w-[1600px] px-5 pb-16 pt-10 sm:px-8 sm:pt-14 2xl:px-12">
           {!activeId ? (
             <>
-              <div className="text-center">
-                <h1 className="text-balance text-[clamp(1.75rem,4vw,2.25rem)] font-semibold tracking-tight text-fg">
-                  What should we tackle today?
-                </h1>
-                <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
-                  Talk to your FDE first. Chat, jump on a call, or open a video room.
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[34rem]">
+                  <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-faint">
+                    Your engineer
+                  </p>
+                  <h1 className="marketing-display mt-1.5 text-[clamp(2rem,4.2vw,3.25rem)] font-medium leading-[1.02] tracking-[-0.04em] text-fg">
+                    What should we tackle today?
+                  </h1>
+                  <p className="marketing-body mt-4 max-w-[28rem] text-[15px] leading-[1.5] text-fg-muted">
+                    Talk to your FDE first. Chat, jump on a call, or open a video room.
+                  </p>
+                </div>
+
+                <p className="inline-flex w-fit items-center rounded-full border border-border bg-bg-elevated px-4 py-2 text-[13px] font-medium text-fg-secondary shadow-sm">
+                  Chat · Call · Video room
                 </p>
               </div>
 
-              <div className="mx-auto mt-6 max-w-2xl">
+              <div className="mt-7 max-w-[56rem]">
                 <PromptComposer
                   compact
                   value={prompt}
@@ -184,7 +193,7 @@ export default function OverviewPage() {
                           void startCall();
                         }}
                         title={`Live voice call with ${agentName} — starts right here`}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-bg px-2.5 text-xs font-medium text-fg-secondary transition-premium hover:bg-bg-hover disabled:opacity-50"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-bg px-3.5 text-[13px] font-medium text-fg-secondary transition-premium hover:border-border-strong hover:bg-bg-hover disabled:opacity-50"
                       >
                         {busy?.kind === "call" ? (
                           <IconLoader size={14} className="animate-spin" />
@@ -201,7 +210,7 @@ export default function OverviewPage() {
                           void startMeet();
                         }}
                         title="Opens a video room with your camera on, plus a link you can send a teammate"
-                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-bg px-2.5 text-xs font-medium text-fg-secondary transition-premium hover:bg-bg-hover disabled:opacity-50"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-bg px-3.5 text-[13px] font-medium text-fg-secondary transition-premium hover:border-border-strong hover:bg-bg-hover disabled:opacity-50"
                       >
                         {busy?.kind === "meet" ? (
                           <IconLoader size={14} className="animate-spin" />
@@ -215,18 +224,18 @@ export default function OverviewPage() {
                 />
 
                 {/* Always-visible progress — the send-button spinner alone is too easy to miss. */}
-                <div aria-live="polite" className="min-h-[24px] pt-2 text-center">
+                <div aria-live="polite" className="min-h-[26px] pt-2.5">
                   {busy && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-dim px-3 py-1 text-xs font-medium text-fg">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-dim px-3 py-1 text-[12.5px] font-medium text-fg">
                       <IconLoader size={13} className="animate-spin" />
                       {busy.label}
                     </span>
                   )}
                   {!busy && error && (
-                    <span className="text-xs text-danger">{error}</span>
+                    <span className="text-[12.5px] text-danger">{error}</span>
                   )}
                   {!busy && !error && (
-                    <span className="text-xs text-fg-faint">
+                    <span className="text-[12.5px] leading-snug text-fg-faint">
                       Call = live voice with {agentName}. Video room = your camera on, with a
                       join link for a teammate.
                     </span>
@@ -234,14 +243,14 @@ export default function OverviewPage() {
                 </div>
               </div>
 
-              <div className="mx-auto mt-3 flex max-w-2xl flex-wrap justify-center gap-2">
+              <div className="mt-4 flex max-w-[56rem] flex-wrap gap-2">
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     type="button"
                     disabled={Boolean(busy)}
                     onClick={() => startFromPrompt(s)}
-                    className="rounded-full border border-border bg-bg-elevated px-3 py-1.5 text-left text-xs text-fg-muted shadow-sm transition-premium hover:border-border-strong hover:bg-bg-hover hover:text-fg disabled:opacity-50"
+                    className="inline-flex h-9 items-center rounded-full border border-border bg-bg-elevated px-4 text-left text-[13px] font-medium text-fg-muted shadow-sm transition-premium hover:border-border-strong hover:bg-bg-hover hover:text-fg disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -249,9 +258,16 @@ export default function OverviewPage() {
               </div>
             </>
           ) : (
-            <div className="overflow-hidden rounded-[20px] border border-border bg-bg-elevated shadow-md">
-              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                <p className="text-sm font-medium text-fg">Active thread</p>
+            <div className="overflow-hidden rounded-2xl border border-border bg-bg-elevated shadow-md">
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-faint">
+                    Active thread
+                  </p>
+                  <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-fg">
+                    {agentName}
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Link href={`/threads/${activeId}`}>
                     <Button size="sm" variant="ghost" rightIcon={<IconArrowRight size={14} />}>
@@ -284,26 +300,35 @@ export default function OverviewPage() {
           )}
 
           {/* Workspace statistics — the numbers that used to live in Operations */}
-          <section className="mt-10">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-fg">Workspace</h2>
+          <section className="mt-12 border-t border-border pt-8 sm:mt-14 sm:pt-10">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-faint">01</p>
+                <h2 className="marketing-display mt-1.5 text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-[1.15] tracking-[-0.03em] text-fg">
+                  Workspace
+                </h2>
+              </div>
               <span className="mono-ts uppercase tracking-[0.14em]">
                 {statsLoading ? "loading…" : "live"}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+
+            {/* Hairline seams instead of gutters — the landing page's product strip */}
+            <div className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-border bg-border grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="rounded-[14px] border border-border bg-bg-elevated p-3 shadow-sm"
+                  className="flex min-w-0 flex-col bg-bg-elevated p-5 sm:p-6"
                 >
-                  <p className="truncate text-[11px] text-fg-muted">{s.label}</p>
+                  <p className="truncate text-[12.5px] font-medium tracking-[-0.01em] text-fg-muted">
+                    {s.label}
+                  </p>
                   {statsLoading ? (
-                    <div className="skeleton mt-2 h-6 w-10" />
+                    <div className="skeleton mt-3 h-9 w-14" />
                   ) : (
                     <p
                       className={cn(
-                        "mt-1.5 font-mono text-2xl tabular tracking-tight text-fg",
+                        "mt-2 font-mono text-[clamp(1.75rem,2.6vw,2.6rem)] leading-[1.05] tabular tracking-[-0.04em] text-fg",
                         s.tone === "warn" && s.value > 0 && "text-warning",
                       )}
                     >
@@ -316,12 +341,17 @@ export default function OverviewPage() {
           </section>
 
           {/* Recent threads — one horizontal row */}
-          <section className="mt-8">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-fg">Recent threads</h2>
+          <section className="mt-12 border-t border-border pt-8 sm:mt-14 sm:pt-10">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[12px] font-medium tracking-[-0.01em] text-fg-faint">02</p>
+                <h2 className="marketing-display mt-1.5 text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-[1.15] tracking-[-0.03em] text-fg">
+                  Recent threads
+                </h2>
+              </div>
               <Link
                 href="/threads"
-                className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-fg"
+                className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-border bg-bg-elevated px-4 text-[13px] font-medium text-fg-secondary shadow-sm transition-premium hover:border-border-strong hover:bg-bg-hover hover:text-fg"
               >
                 View all
                 <IconArrowRight size={14} />
@@ -332,15 +362,17 @@ export default function OverviewPage() {
               <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="w-full rounded-[16px] border border-dashed border-border bg-bg-elevated p-5 text-left shadow-sm transition-premium hover:border-border-strong"
+                className="mt-6 w-full rounded-2xl border border-dashed border-border bg-bg-elevated p-6 text-left shadow-sm transition-premium hover:border-border-strong sm:p-8"
               >
-                <p className="text-sm font-semibold text-fg">No threads yet</p>
-                <p className="mt-1 text-xs text-fg-muted">
+                <p className="text-[15px] font-semibold tracking-[-0.02em] text-fg">
+                  No threads yet
+                </p>
+                <p className="mt-1.5 text-[13.5px] leading-snug text-fg-muted">
                   Ask {agentName} something above and it will show up here.
                 </p>
               </button>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {recent.map((t) => {
                   const name =
                     t.prospect?.companyName || t.prospect?.personName || "Thread";
@@ -351,20 +383,20 @@ export default function OverviewPage() {
                     <Link
                       key={t.id}
                       href={`/threads/${t.id}`}
-                      className="flex min-w-0 flex-col rounded-[16px] border border-border bg-bg-elevated p-3.5 shadow-sm transition-premium hover:border-border-strong hover:shadow-md"
+                      className="flex min-w-0 flex-col rounded-2xl border border-border bg-bg-elevated p-5 shadow-sm transition-premium hover:border-border-strong hover:shadow-md"
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-bg">
-                        <IconMessage size={13} />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-bg">
+                        <IconMessage size={14} />
                       </span>
-                      <p className="mt-2.5 line-clamp-2 text-sm font-medium leading-snug text-fg">
+                      <p className="mt-3.5 line-clamp-2 text-[14.5px] font-semibold leading-snug tracking-[-0.015em] text-fg">
                         {name}
                       </p>
                       {showPreview && (
-                        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-fg-muted">
+                        <p className="mt-2 line-clamp-3 text-[13px] leading-snug text-fg-muted">
                           {preview}
                         </p>
                       )}
-                      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                      <div className="mt-auto flex items-center justify-between gap-2 pt-5">
                         {t.lastChannel ? (
                           <span className="mono-ts rounded-full border border-border px-1.5 uppercase">
                             {t.lastChannel}
